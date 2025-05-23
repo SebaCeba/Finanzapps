@@ -1,16 +1,94 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Inicio - FinanzApp</title>
+    <meta charset="UTF-8">
+    <title>Inicio</title>
+    <link href="https://cdn.jsdelivr.net/npm/ant-design-icons@latest/dist/index.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sider {
+            width: 200px;
+            background-color: #001529;
+            color: white;
+        }
+
+        .sider .logo {
+            height: 64px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 16px;
+        }
+
+        .sider ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sider ul li {
+            padding: 12px 24px;
+            border-bottom: 1px solid #0f213a;
+            cursor: pointer;
+        }
+
+        .sider ul li:hover {
+            background-color: #1890ff;
+        }
+
+        .content-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #fff;
+            padding: 16px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .content {
+            padding: 24px;
+            background: #fff;
+            flex-grow: 1;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 16px;
+            background: #f0f2f5;
+        }
+    </style>
 </head>
 <body>
-    <h1>Bienvenido a FinanzApp</h1>
-    <p>Controla tus finanzas de forma simple.</p>
-
-    <h2>Navegación</h2>
-    <ul>
-        <li><a href="/categorias">Gestionar Categorías</a></li>
-        <li><a href="/transacciones">Ver Transacciones</a></li>
-    </ul>
+    <div class="layout">
+        <div class="sider">
+            <div class="logo"></div>
+            <ul>
+                <li onclick="location.href='/categorias'">👤 nav 1</li>
+                <li onclick="location.href='/transacciones'">📹 nav 2</li>
+                <li onclick="location.href='/ruta3'">⬆ nav 3</li>
+                <li onclick="location.href='/ruta4'">👤 nav 4</li>
+            </ul>
+        </div>
+        <div class="content-area">
+            <div class="header">
+                <h2>Panel de Inicio</h2>
+            </div>
+            <div class="content">
+                {{ contenido|safe }}
+            </div>
+            <div class="footer">
+                FinanzasApp ©2025 creado por ti 💸
+            </div>
+        </div>
+    </div>
 </body>
 </html>
