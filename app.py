@@ -1,5 +1,5 @@
 from flask import Flask, render_template
-from database import db, Transaccion, ResumenMensual, Categoria
+from database import db, Transaccion, ResumenMensual, Categoria, Presupuesto
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///finanzas.db"
@@ -145,6 +145,21 @@ def guardar_cambios(n_clicks, anio, mes, valores, ids):
 
     return "✅ Presupuesto actualizado con éxito."
 
+@app.route("/admin")
+def admin_dashboard():
+    total_categorias = Categoria.query.count()
+    total_subcategorias = Categoria.query.filter(Categoria.parent_id.isnot(None)).count()
+    total_transacciones = Transaccion.query.count()
+    total_presupuestos = Presupuesto.query.count()
+    total_resumenes = ResumenMensual.query.count()
+
+    return render_template("admin.html", 
+        total_categorias=total_categorias,
+        total_subcategorias=total_subcategorias,
+        total_transacciones=total_transacciones,
+        total_presupuestos=total_presupuestos,
+        total_resumenes=total_resumenes
+    )
 
 
 # 🔹 Ejecutar localmente
