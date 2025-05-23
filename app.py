@@ -59,7 +59,7 @@ dash_app.layout = html.Div([
         dcc.Dropdown(
             id="filtro-anio",
             options=[{"label": str(int(a)), "value": str(int(a))} for a in sorted(df['año'].unique()) if str(a).isdigit()],
-            value=str(int(df['año'].max()))
+            value=str(int(df['año'].max())) if not df.empty and pd.notnull(df['año'].max()) else None
         ),
         html.Label("Mes:"),
         dcc.Dropdown(
