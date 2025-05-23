@@ -2,92 +2,88 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Inicio</title>
-    <link href="https://cdn.jsdelivr.net/npm/ant-design-icons@latest/dist/index.min.css" rel="stylesheet">
+    <title>Inicio | FinanzApp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body {
+            font-family: 'Inter', sans-serif;
             margin: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        .layout {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .sider {
-            width: 200px;
-            background-color: #001529;
-            color: white;
-        }
-
-        .sider .logo {
-            height: 64px;
-            background: rgba(255, 255, 255, 0.2);
-            margin: 16px;
-        }
-
-        .sider ul {
-            list-style: none;
             padding: 0;
-        }
-
-        .sider ul li {
-            padding: 12px 24px;
-            border-bottom: 1px solid #0f213a;
-            cursor: pointer;
-        }
-
-        .sider ul li:hover {
-            background-color: #1890ff;
-        }
-
-        .content-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
             background: #fff;
-            padding: 16px;
+            color: #1A1A1A;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
             border-bottom: 1px solid #eee;
         }
-
-        .content {
-            padding: 24px;
-            background: #fff;
-            flex-grow: 1;
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
         }
-
-        .footer {
+        nav a {
+            margin-left: 24px;
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+        }
+        .contenido {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 80px;
             text-align: center;
-            padding: 16px;
-            background: #f0f2f5;
+        }
+        .contenido h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .contenido p {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        .botones {
+            display: flex;
+            gap: 16px;
+        }
+        .boton {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .boton-azul {
+            background-color: #0057FF;
+            color: white;
+        }
+        .boton-blanco {
+            background-color: white;
+            border: 1px solid #0057FF;
+            color: #0057FF;
         }
     </style>
 </head>
 <body>
-    <div class="layout">
-        <div class="sider">
-            <div class="logo"></div>
-            <ul>
-                <li onclick="location.href='/categorias'">👤 nav 1</li>
-                <li onclick="location.href='/transacciones'">📹 nav 2</li>
-                <li onclick="location.href='/ruta3'">⬆ nav 3</li>
-                <li onclick="location.href='/ruta4'">👤 nav 4</li>
-            </ul>
-        </div>
-        <div class="content-area">
-            <div class="header">
-                <h2>Panel de Inicio</h2>
-            </div>
-            <div class="content">
-                {{ contenido|safe }}
-            </div>
-            <div class="footer">
-                FinanzasApp ©2025 creado por ti 💸
-            </div>
+    <header>
+        <div class="logo">💸 FinanzApp</div>
+        <nav>
+            <a href="/invierte">Invierte</a>
+            <a href="/aprende">Aprende</a>
+            <a href="/perfil">Perfil</a>
+        </nav>
+    </header>
+
+    <div class="contenido">
+        <h1>Hola Sebastián 👋</h1>
+        <p>Llevas controlando tus finanzas hace 1144 días</p>
+        <div class="botones">
+            <a href="/nuevo"><button class="boton boton-blanco">+ Nuevo objetivo</button></a>
+            <a href="/inversion"><button class="boton boton-azul">💰 Invertir más</button></a>
         </div>
     </div>
 </body>
