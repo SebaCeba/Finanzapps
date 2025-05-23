@@ -5,50 +5,66 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 
 app = Flask(__name__)
 
-# 🔹 OBTENER LA RUTA ABSOLUTA DEL PROYECTO
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Esto apunta al directorio del proyecto
+# 🔹 RUTA ABSOLUTA DEL PROYECTO
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 🔹 RUTA CORRECTA PARA `instance/`
+# 🔹 RUTA DEL DIRECTORIO instance/
 INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
-os.makedirs(INSTANCE_DIR, exist_ok=True)  # Crear 'instance/' si no existe
+os.makedirs(INSTANCE_DIR, exist_ok=True)
 
-# 🔹 RUTA FINAL DE `finanzas.db`
+# 🔹 Ruta final de la base de datos
 DB_PATH = os.path.join(INSTANCE_DIR, "finanzas.db")
 
-# 🔹 CONFIGURAR FLASK PARA USAR ESTA BASE DE DATOS
+# 🔹 Configuración de Flask + SQLite
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
-# 🔹 Tabla de Categorías
+# 🔹 Modelo de Usuario
+class Usuario(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(50), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    contraseña = db.Column(db.String(100), nullable=False)
+
+    transacciones = db.relationship('Transaccion', backref='usuario', lazy=True)
+    presupuestos = db.relationship('Presupuesto', backref='usuario', lazy=True)
+    categorias = db.relationship('Categoria', backref='usuario', lazy=True)
+
+# 🔹 Categorías
 class Categoria(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(50), nullable=False)
-    tipo = db.Column(db.String(15), nullable=False)  # "ingreso", "gasto_fijo", "gasto_variable"
+    tipo = db.Column(db.String(15), nullable=False)  # ingreso, gasto_fijo, gasto_variable
     parent_id = db.Column(db.Integer, db.ForeignKey("categoria.id"), nullable=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=False)
+
     subcategorias = db.relationship("Categoria", remote_side=[id])
 
-# 🔹 Tabla de Transacciones
+# 🔹 Transacciones
 class Transaccion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tipo = db.Column(db.String(15), nullable=False)
     categoria_id = db.Column(db.Integer, db.ForeignKey("categoria.id"), nullable=False)
     monto = db.Column(db.Float, nullable=False)
     fecha = db.Column(db.String(10), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=False)
 
-# 🔹 Tabla de Presupuestos
+# 🔹 Presupuesto
 class Presupuesto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     categoria_id = db.Column(db.Integer, db.ForeignKey("categoria.id"), nullable=False)
     mes = db.Column(db.Integer, nullable=False)
     año = db.Column(db.Integer, nullable=False)
     monto_presupuestado = db.Column(db.Float, nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=False)
 
-# 🔹 Tabla de Resumen Mensual
+# 🔹 Resumen mensual (opcionalmente por usuario)
 class ResumenMensual(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     mes = db.Column(db.Integer, nullable=False)
@@ -56,13 +72,14 @@ class ResumenMensual(db.Model):
     total_ingresos = db.Column(db.Float, default=0)
     total_gastos_fijos = db.Column(db.Float, default=0)
     total_gastos_variables = db.Column(db.Float, default=0)
+    # usuario_id = db.Column(db.Integer, db.ForeignKey("usuario.id"))  # si lo haces por usuario
 
-# 🔹 CREAR LA BASE DE DATOS SI NO EXISTE
+# 🔹 Crear la base si no existe
 with app.app_context():
     db.create_all()
     print(f"✅ Base de datos creada en: {DB_PATH}")
 
-# 🔹 Función para obtener los tipos únicos de transacciones desde la base de datos
+# 🔹 Funciones auxiliares para Tkinter o uso externo
 def obtener_tipos_desde_bd():
     try:
         conexion = sqlite3.connect(DB_PATH)
@@ -73,9 +90,8 @@ def obtener_tipos_desde_bd():
         return tipos
     except Exception as e:
         print(f"❌ Error al obtener tipos de la base de datos: {e}")
-        return ["ingreso", "gasto_fijo", "gasto_variable", "otro"]  # Valores predeterminados en caso de error
+        return ["ingreso", "gasto_fijo", "gasto_variable", "otro"]
 
-# 🔹 Función para obtener las categorías existentes y sus IDs
 def obtener_categorias_desde_bd():
     try:
         conexion = sqlite3.connect(DB_PATH)

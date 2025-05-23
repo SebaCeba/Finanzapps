@@ -1,151 +1,106 @@
-from flask import Flask, render_template
-from database import db, Transaccion, ResumenMensual, Categoria, Presupuesto
+from flask import Flask, render_template, redirect, url_for, request, flash
+from database import db, Transaccion, ResumenMensual, Categoria, Presupuesto, Usuario
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
 
+# 🔹 Configuración Flask
 app = Flask(__name__)
+app.secret_key = secrets.token_hex(16)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///finanzas.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 
-# 🔹 Página principal
+# 🔹 Configurar Login
+login_manager = LoginManager()
+login_manager.login_view = "login"
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return Usuario.query.get(int(user_id))
+
+
+# 🔹 Página de Bienvenida Pública
 @app.route("/")
-def index():
-    resumen = ResumenMensual.query.all()
+def bienvenida():
+    if current_user.is_authenticated:
+        return redirect(url_for("panel"))
+    return render_template("bienvenida.html")
+
+
+# 🔹 Panel Principal (requiere login)
+@app.route("/panel")
+@login_required
+def panel():
+    resumen = ResumenMensual.query.all()  # puedes filtrar por usuario si lo adaptas
     return render_template("index.html", resumen=resumen)
 
-# 🔹 Página de transacciones
+
+# 🔹 Página de Registro
+@app.route("/registro", methods=["GET", "POST"])
+def registro():
+    if request.method == "POST":
+        nombre = request.form["nombre"]
+        email = request.form["email"]
+        contraseña = request.form["contraseña"]
+        if Usuario.query.filter_by(email=email).first():
+            flash("El correo ya está registrado.")
+            return redirect(url_for("registro"))
+        nuevo_usuario = Usuario(
+            nombre=nombre,
+            email=email,
+            contraseña=generate_password_hash(contraseña, method="pbkdf2:sha256")
+        )
+        db.session.add(nuevo_usuario)
+        db.session.commit()
+        flash("Cuenta creada con éxito. Inicia sesión.")
+        return redirect(url_for("login"))
+    return render_template("registro.html")
+
+
+# 🔹 Página de Login
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form["email"]
+        contraseña = request.form["contraseña"]
+        usuario = Usuario.query.filter_by(email=email).first()
+        if usuario and check_password_hash(usuario.contraseña, contraseña):
+            login_user(usuario)
+            return redirect(url_for("panel"))
+        flash("Credenciales incorrectas")
+    return render_template("login.html")
+
+
+# 🔹 Logout
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+
+# 🔹 Página de Transacciones
 @app.route("/transacciones")
+@login_required
 def transacciones():
-    transacciones = Transaccion.query.all()
+    transacciones = Transaccion.query.filter_by(usuario_id=current_user.id).all()
     return render_template("transacciones.html", transacciones=transacciones)
 
-# 🔹 Página de categorías
+
+# 🔹 Página de Categorías
 @app.route("/categorias")
+@login_required
 def mostrar_categorias():
-    categorias = Categoria.query.filter_by(parent_id=None).all()
-    subcategorias = Categoria.query.filter(Categoria.parent_id.isnot(None)).all()
+    categorias = Categoria.query.filter_by(parent_id=None, usuario_id=current_user.id).all()
+    subcategorias = Categoria.query.filter(Categoria.parent_id.isnot(None), Categoria.usuario_id == current_user.id).all()
     return render_template("categorias.html", categorias=categorias, subcategorias=subcategorias)
 
-# INTEGRAR DASH EN FLASK
-import dash
-from dash import dcc, html
-import pandas as pd
-import sqlite3
-import os
-from dash.dependencies import Input, Output, State, MATCH, ALL
 
-# Reusar app de Flask
-dash_app = dash.Dash(__name__, server=app, url_base_pathname="/editar-presupuesto/", suppress_callback_exceptions=True)
-
-# Ruta base a la base de datos
-DB_PATH = os.path.join(os.path.dirname(__file__), "instance", "finanzas.db")
-
-# Función para obtener presupuesto actualizado
-def obtener_presupuesto():
-    conexion = sqlite3.connect(DB_PATH)
-    query = """
-        SELECT p.id, p.categoria_id, c.nombre as categoria, p.año, p.mes, p.monto_presupuestado
-        FROM presupuesto p
-        LEFT JOIN categoria c ON p.categoria_id = c.id
-    """
-    df = pd.read_sql_query(query, conexion)
-    conexion.close()
-    return df
-
-# Layout
-dash_app.layout = html.Div([
-    html.H1("📊 Editar Presupuesto"),
-    
-    html.Div([
-        html.Label("Año:"),
-        dcc.Dropdown(id="filtro-anio"),
-        
-        html.Label("Mes:"),
-        dcc.Dropdown(
-            id="filtro-mes",
-            options=[
-                {"label": m, "value": i}
-                for i, m in enumerate(["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                                       "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], start=1)
-            ],
-            value=1
-        )
-    ], style={"display": "flex", "gap": "20px", "marginBottom": "20px"}),
-
-    html.H2("Presupuesto Mensual"),
-    html.Div(id="tabla-presupuesto"),
-
-    html.Button("Guardar Cambios", id="guardar-cambios", n_clicks=0),
-    html.Div(id="mensaje-guardado", style={"marginTop": "10px", "color": "green"})
-])
-
-# Callback para llenar opciones de año
-@dash_app.callback(
-    Output("filtro-anio", "options"),
-    Output("filtro-anio", "value"),
-    Input("filtro-mes", "value")  # se dispara al cargar también
-)
-def actualizar_opciones_anio(_):
-    df = obtener_presupuesto()
-    opciones = [{"label": str(int(a)), "value": int(a)} for a in sorted(df['año'].unique())]
-    valor_default = opciones[-1]["value"] if opciones else None
-    return opciones, valor_default
-
-# Callback para generar la tabla con inputs
-@dash_app.callback(
-    Output("tabla-presupuesto", "children"),
-    [Input("filtro-anio", "value"), Input("filtro-mes", "value")]
-)
-def actualizar_tabla(anio, mes):
-    df = obtener_presupuesto()
-    df_filtrado = df[(df["año"] == int(anio)) & (df["mes"] == int(mes))]
-
-    if df_filtrado.empty:
-        return html.P("⚠️ No hay presupuestos definidos para este mes y año.")
-
-    tabla = [
-        html.Tr([html.Th("Categoría"), html.Th("Presupuesto Actual"), html.Th("Nuevo Monto")])
-    ]
-
-    for _, row in df_filtrado.iterrows():
-        tabla.append(html.Tr([
-            html.Td(row["categoria"]),
-            html.Td(f"${row['monto_presupuestado']:,.2f}"),
-            html.Td(dcc.Input(
-                id={"type": "input-presupuesto", "index": row["id"]},
-                type="number",
-                value=row["monto_presupuestado"],
-                step="0.01"
-            ))
-        ]))
-
-    return html.Table(tabla, style={"width": "100%", "borderCollapse": "collapse"})
-
-# Callback para guardar los cambios
-@dash_app.callback(
-    Output("mensaje-guardado", "children"),
-    Input("guardar-cambios", "n_clicks"),
-    State("filtro-anio", "value"),
-    State("filtro-mes", "value"),
-    State({"type": "input-presupuesto", "index": ALL}, "value"),
-    State({"type": "input-presupuesto", "index": ALL}, "id")
-)
-def guardar_cambios(n_clicks, anio, mes, valores, ids):
-    if n_clicks == 0:
-        return ""
-
-    conexion = sqlite3.connect(DB_PATH)
-    cursor = conexion.cursor()
-
-    for nuevo_monto, input_id in zip(valores, ids):
-        presupuesto_id = input_id["index"]
-        cursor.execute("UPDATE presupuesto SET monto_presupuestado = ? WHERE id = ?", (nuevo_monto, presupuesto_id))
-
-    conexion.commit()
-    conexion.close()
-
-    return "✅ Presupuesto actualizado con éxito."
-
+# 🔹 Página Admin
 @app.route("/admin")
+@login_required
 def admin_dashboard():
     total_categorias = Categoria.query.count()
     total_subcategorias = Categoria.query.filter(Categoria.parent_id.isnot(None)).count()
@@ -153,7 +108,7 @@ def admin_dashboard():
     total_presupuestos = Presupuesto.query.count()
     total_resumenes = ResumenMensual.query.count()
 
-    return render_template("admin.html", 
+    return render_template("admin.html",
         total_categorias=total_categorias,
         total_subcategorias=total_subcategorias,
         total_transacciones=total_transacciones,
