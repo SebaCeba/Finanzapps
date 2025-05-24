@@ -56,7 +56,7 @@ def registro():
         nuevo_usuario = Usuario(
             nombre=nombre,
             email=email,
-            contraseña=generate_password_hash(contraseña, method="pbkdf2:sha256")
+            contraseña=generate_password_hash(contraseña, method="pbkdf2:sha256"),
             fecha_creacion=datetime.utcnow()
         )
         db.session.add(nuevo_usuario)
