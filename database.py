@@ -6,6 +6,7 @@ from tkinter import ttk, filedialog, messagebox
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -31,6 +32,7 @@ class Usuario(db.Model, UserMixin):
     nombre = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     contraseña = db.Column(db.String(100), nullable=False)
+    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
 
     transacciones = db.relationship('Transaccion', backref='usuario', lazy=True)
     presupuestos = db.relationship('Presupuesto', backref='usuario', lazy=True)

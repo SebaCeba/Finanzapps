@@ -29,13 +29,19 @@ def bienvenida():
     return render_template("bienvenida.html")
 
 
-# 🔹 Panel Principal (requiere login)
+# 🔹 Panel Principal estilo Fintual (requiere login)
 @app.route("/panel")
 @login_required
 def panel():
-    resumen = ResumenMensual.query.all()  # puedes filtrar por usuario si lo adaptas
-    return render_template("index.html", resumen=resumen)
+    # Calcula los días desde que el usuario creó su cuenta
+    dias_activo = (datetime.utcnow() - current_user.fecha_creacion).days
 
+    # Renderiza el panel con los datos dinámicos
+    return render_template(
+        "index.html",        # Usa tu nuevo index.html con estilo Fintual
+        nombre=current_user.nombre,
+        dias=dias_activo
+    )
 
 # 🔹 Página de Registro
 @app.route("/registro", methods=["GET", "POST"])
@@ -51,6 +57,7 @@ def registro():
             nombre=nombre,
             email=email,
             contraseña=generate_password_hash(contraseña, method="pbkdf2:sha256")
+            fecha_creacion=datetime.utcnow()
         )
         db.session.add(nuevo_usuario)
         db.session.commit()
