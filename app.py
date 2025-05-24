@@ -3,6 +3,7 @@ from database import db, Transaccion, ResumenMensual, Categoria, Presupuesto, Us
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
+from datetime import datetime
 
 # 🔹 Configuración Flask
 app = Flask(__name__)
