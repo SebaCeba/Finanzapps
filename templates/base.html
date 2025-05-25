@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>{% block title %}FinanzApp{% endblock %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -46,7 +47,7 @@
         }
 
         .botones a {
-            text-decoration: none; /* 🔹 Elimina subrayado en los enlaces */
+            text-decoration: none;
         }
 
         .boton {
@@ -72,15 +73,40 @@
             border: 1px solid #0057FF;
             color: #0057FF;
         }
-    </style>
-    <style>
-    @media (max-width: 576px) {
-        .texto-guardar {
-            display: none;
+
+        /* Responsive ocultar texto en botón guardar */
+        @media (max-width: 576px) {
+            .texto-guardar {
+                display: none;
+            }
         }
-    }
+
+        /* Ocultar flechas en inputs numéricos */
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* Celdas modificadas */
+        .modificada {
+            background-color: #fff8cc !important;
+        }
+
+        #mensaje-cambios {
+            display: none;
+            color: #cc8400;
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-align: right;
+        }
     </style>
 </head>
+
 <body>
     <header>
         <div class="logo">💸 FinanzApp</div>
@@ -113,20 +139,19 @@
             </a>
         </div>
 
-        
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <ul class="flashes">
-      {% for message in messages %}
-        <li style="color: green;">{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-{% endwith %}
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for message in messages %}
+                        <li style="color: green;">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
 
-{% block content %}{% endblock %}
+        {% block content %}{% endblock %}
     </div>
 
-{% block scripts %}{% endblock %}
+    {% block scripts %}{% endblock %}
 </body>
 </html>

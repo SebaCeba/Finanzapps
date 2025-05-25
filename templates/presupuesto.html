@@ -3,18 +3,6 @@
 {% block title %}Presupuesto Anual | FinanzApp{% endblock %}
 
 {% block content %}
-<style>
-    .modificada {
-        background-color: #fff8cc !important;
-    }
-    #mensaje-cambios {
-        display: none;
-        color: #cc8400;
-        font-size: 14px;
-        margin-bottom: 12px;
-        text-align: right;
-    }
-</style>
 <div style="margin: 32px;">
 
     <!-- 🆕 Mejora visual del título -->
@@ -102,10 +90,10 @@
             <a href="#" id="añadir-categoria" style="color: #0057FF; font-weight: bold;">+ Añadir categoría</a>
         </div>
 
-        <div id="mensaje-cambios">⚠️ Cambios sin guardar</div>
-
-<div style="text-align: right; margin-top: 24px;">
-            <button type="submit" class="boton boton-azul">Guardar cambios</button>
+        <div style="text-align: right; margin-top: 24px;">
+            <button type="submit" class="boton boton-azul">
+                💾 <span class="texto-guardar">Guardar cambios</span>
+            </button>
         </div>
     </form>
 </div>
@@ -245,7 +233,7 @@ window.addEventListener("DOMContentLoaded", function () {
                 if (idx >= 1 && idx <= 12) {
                     const input = celda.querySelector("input[type='number']");
                     if (input) {
-                        const valor = parseFloat(input.value.replace(",", ".")) || 0;
+                        const valor = parseFloat(input.value.replace(/\./g, "").replace(",", ".")) || 0;
                         totales[idx - 1] += valor;
                     }
                 }
@@ -278,25 +266,6 @@ window.addEventListener("DOMContentLoaded", function () {
 function cerrarModal() {
     document.getElementById("modal-confirmacion").style.display = "none";
 }
-
-let cambiosPendientes = false;
-
-document.querySelectorAll("input[type='number']").forEach(input => {
-    input.addEventListener("input", function () {
-        this.classList.add("modificada");
-
-        if (!cambiosPendientes) {
-            cambiosPendientes = true;
-            document.getElementById("mensaje-cambios").style.display = "block";
-        }
-    });
-});
-
-document.querySelector("form").addEventListener("submit", function () {
-    document.getElementById("mensaje-cambios").style.display = "none";
-    cambiosPendientes = false;
-});
-
 </script>
 
 {% endblock %}
