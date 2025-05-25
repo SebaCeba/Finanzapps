@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Presupuesto Anual | FinanzApp{% endblock %}
+
+{% block content %}
+<style>
+    .modificada {
+        background-color: #fff8cc !important;
+    }
+    #mensaje-cambios {
+        display: none;
+        color: #cc8400;
+        font-size: 14px;
+        margin-bottom: 12px;
+        text-align: right;
+    }
+</style>
+<div style="margin: 32px;">
+
+    <!-- 🆕 Mejora visual del título -->
+    <h2 style="text-align: center; font-size: 24px; margin-top: 32px; margin-bottom: 24px;">
+        Presupuesto Anual
+    </h2>
+
+    <form method="POST" action="{{ url_for('guardar_presupuesto') }}">
+        <input type="hidden" name="año" value="{{ año_actual }}">
+
+        <!-- 🆕 Espaciado visual entre selector y tabla -->
+        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 32px;">
+            <label style="margin-right: 8px;">Año Ppto</label>
+            <select name="año" style="font-size: 16px; padding: 4px 8px;">
+                {% for año in años %}
+                    <option value="{{ año }}" {% if año == año_actual %}selected{% endif %}>{{ año }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 🆕 Encapsulado de tabla para scroll horizontal en pantallas pequeñas -->
+        <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: center;">
+            <thead>
+                <tr>
+                    <th style="background-color: white;"></th>
+                    {% for mes in ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"] %}
+                        <th style="border: 1px solid #ccc;">{{ mes }}</th>
+                    {% endfor %}
+                    <th></th>
+                </tr>
+                <tr id="fila-ingresos">
+                    <th style="background-color: #FFD700;">Ingresos</th>
+                    {% for i in range(12) %}
+                        <th id="total-mes-{{ i+1 }}" style="background-color: #FFD700;">0</th>
+                    {% endfor %}
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for categoria, montos in data.items() %}
+                    <tr>
+                        <td style="background-color: #FFF3C4; position: relative;">
+                            <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-start;">
+                                <a href="#" class="btn-opciones" style="font-size: 18px; text-decoration: none;">⚙️</a>
+                                <span class="nombre-categoria">{{ categoria }}</span>
+                                <input type="hidden" class="categoria-id" value="{{ data_ids[categoria] }}">
+                            </div>
+                            <div class="menu-opciones" style="
+                                display: none;
+                                position: fixed; /* Antes: absolute */
+                                background-color: #fff;
+                                border: 1px solid #ccc;
+                                border-radius: 6px;
+                                box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+                                z-index: 1001;
+                                min-width: 120px;
+                            ">
+                                <a href="#" class="renombrar" style="display: block; padding: 8px; text-align: left; text-decoration: none; color: #333;">✏️ Renombrar</a>
+                                <a href="#" class="eliminar" style="display: block; padding: 8px; text-align: left; text-decoration: none; color: #d00;">🗑️ Eliminar</a>
+                            </div>
+                        </td>
+                        {% for mes in range(1, 13) %}
+                            <td style="background-color: #FFF9E6;">
+                                <input type="number" name="presupuesto[{{ categoria }}][{{ mes }}]" value="{{ montos[mes] }}" style="width: 60px; padding: 4px;" />
+                            </td>
+                        {% endfor %}
+                        <td></td>
+                    </tr>
+                {% endfor %}
+                <tr class="nueva-fila" style="display: none;">
+                    <td style="background-color: #FFF3C4;"><input type="text" name="nueva_categoria" placeholder="Nueva categoría" /></td>
+                    {% for mes in range(1, 13) %}
+                        <td style="background-color: #FFF9E6;">
+                            <input type="number" name="presupuesto[nueva_categoria][{{ mes }}]" value="0" style="width: 60px;" />
+                        </td>
+                    {% endfor %}
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+        </div> <!-- scroll horizontal -->
+
+        <div style="text-align: left; margin-top: 12px;">
+            <a href="#" id="añadir-categoria" style="color: #0057FF; font-weight: bold;">+ Añadir categoría</a>
+        </div>
+
+        <div id="mensaje-cambios">⚠️ Cambios sin guardar</div>
+
+<div style="text-align: right; margin-top: 24px;">
+            <button type="submit" class="boton boton-azul">Guardar cambios</button>
+        </div>
+    </form>
+</div>
+
+<!-- Modal Eliminar -->
+<div id="modal-confirmacion" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); z-index: 1000;">
+    <div style="background-color: white; padding: 20px; border-radius: 8px; width: 300px; margin: 150px auto; text-align: center;">
+        <p>¿Estás seguro de que quieres eliminar esta categoría?</p>
+        <form method="POST" action="{{ url_for('eliminar_categoria') }}">
+            <input type="hidden" id="id-categoria-a-eliminar" name="categoria_id" />
+            <button type="submit" style="margin-right: 8px;">Sí, eliminar</button>
+            <button type="button" onclick="cerrarModal()">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Renombrar -->
+<div id="modal-renombrar" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); z-index: 1000;">
+    <div style="background-color: white; padding: 20px; border-radius: 8px; width: 300px; margin: 150px auto; text-align: center;">
+        <p>Nuevo nombre de categoría:</p>
+        <input type="text" id="input-nuevo-nombre" style="width: 90%; padding: 8px;" />
+        <div style="margin-top: 16px;">
+            <button id="confirmar-renombrar" style="margin-right: 8px;">Renombrar</button>
+            <button type="button" onclick="cerrarModalRenombrar()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let spanParaRenombrar = null;
+
+window.addEventListener("DOMContentLoaded", function () {
+    // ⚙️ Menú por fila
+    document.querySelectorAll(".btn-opciones").forEach(btn => {
+        btn.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            const menu = this.closest("td").querySelector(".menu-opciones");
+            document.querySelectorAll(".menu-opciones").forEach(m => m.style.display = "none");
+
+            const rect = this.getBoundingClientRect();
+            menu.style.top = `${rect.bottom + window.scrollY}px`;
+            menu.style.left = `${rect.left + window.scrollX}px`;
+
+            menu.style.display = "block";
+        });
+    });
+
+    // Cerrar menús al hacer clic fuera
+    document.addEventListener("click", function (event) {
+        document.querySelectorAll(".menu-opciones").forEach(menu => {
+            if (!menu.contains(event.target) && !event.target.classList.contains("btn-opciones")) {
+                menu.style.display = "none";
+            }
+        });
+    });
+
+    // ✏️ Renombrar
+    document.querySelectorAll(".renombrar").forEach(opcion => {
+        opcion.addEventListener("click", function (e) {
+            e.preventDefault();
+            spanParaRenombrar = this.closest("td").querySelector(".nombre-categoria");
+            document.getElementById("input-nuevo-nombre").value = spanParaRenombrar.textContent;
+            document.getElementById("modal-renombrar").style.display = "block";
+            this.parentElement.style.display = "none";
+        });
+    });
+
+    document.getElementById("confirmar-renombrar").addEventListener("click", function () {
+        const nuevoNombre = document.getElementById("input-nuevo-nombre").value.trim();
+        if (nuevoNombre && spanParaRenombrar) {
+            spanParaRenombrar.textContent = nuevoNombre;
+            const fila = spanParaRenombrar.closest("tr");
+            fila.querySelectorAll("input[type='number']").forEach(input => {
+                const mes = input.name.match(/\[(\d{1,2})\]/)[1];
+                input.name = `presupuesto[${nuevoNombre}][${mes}]`;
+            });
+            cerrarModalRenombrar();
+        }
+    });
+
+    function cerrarModalRenombrar() {
+        document.getElementById("modal-renombrar").style.display = "none";
+    }
+
+    // 🗑️ Eliminar
+    document.querySelectorAll(".eliminar").forEach(opcion => {
+        opcion.addEventListener("click", function (e) {
+            e.preventDefault();
+            const id = this.closest("td").querySelector(".categoria-id").value;
+            document.getElementById("id-categoria-a-eliminar").value = id;
+            document.getElementById("modal-confirmacion").style.display = "block";
+            this.parentElement.style.display = "none";
+        });
+    });
+
+    document.getElementById("añadir-categoria").addEventListener("click", function (e) {
+        e.preventDefault();
+        const nuevaFila = document.querySelector(".nueva-fila");
+        nuevaFila.style.display = "table-row";
+        const inputNombre = nuevaFila.querySelector("input[name='nueva_categoria']");
+        inputNombre.focus();
+
+        inputNombre.addEventListener("blur", () => {
+            if (!inputNombre.value.trim()) {
+                nuevaFila.style.display = "none";
+                inputNombre.value = "";
+            }
+        });
+    });
+
+    document.querySelector("form").addEventListener("submit", function (e) {
+        const nuevaFila = document.querySelector(".nueva-fila");
+        if (nuevaFila && nuevaFila.style.display !== "none") {
+            const nombreInput = nuevaFila.querySelector("input[name='nueva_categoria']");
+            const nombreReal = nombreInput.value.trim();
+            if (nombreReal) {
+                const inputs = nuevaFila.querySelectorAll("input[name^='presupuesto[nueva_categoria]']");
+                inputs.forEach(input => {
+                    const mes = input.name.match(/\[(\d{1,2})\]/)[1];
+                    input.name = `presupuesto[${nombreReal}][${mes}]`;
+                });
+                nombreInput.name = `presupuesto[${nombreReal}][nombre]`;
+            } else {
+                e.preventDefault();
+                alert("Debes ingresar un nombre para la nueva categoría.");
+            }
+        }
+    });
+
+    // 📊 Cálculo dinámico de totales
+    function actualizarTotales() {
+        const totales = Array(12).fill(0);
+        document.querySelectorAll("tbody tr").forEach(fila => {
+            const celdas = fila.querySelectorAll("td");
+            celdas.forEach((celda, idx) => {
+                if (idx >= 1 && idx <= 12) {
+                    const input = celda.querySelector("input[type='number']");
+                    if (input) {
+                        const valor = parseFloat(input.value.replace(",", ".")) || 0;
+                        totales[idx - 1] += valor;
+                    }
+                }
+            });
+        });
+        totales.forEach((total, i) => {
+            const celdaTotal = document.getElementById(`total-mes-${i + 1}`);
+            if (celdaTotal) {
+                celdaTotal.textContent = total.toLocaleString("es-CL", { minimumFractionDigits: 0 });
+            }
+        });
+    }
+
+    actualizarTotales();
+    document.querySelectorAll("input[type='number']").forEach(input => {
+        input.addEventListener("input", actualizarTotales);
+    });
+
+    const observer = new MutationObserver(() => {
+        document.querySelectorAll("input[type='number']").forEach(input => {
+            if (!input.dataset.listenerAttached) {
+                input.addEventListener("input", actualizarTotales);
+                input.dataset.listenerAttached = "true";
+            }
+        });
+    });
+    observer.observe(document.querySelector("tbody"), { childList: true, subtree: true });
+});
+
+function cerrarModal() {
+    document.getElementById("modal-confirmacion").style.display = "none";
+}
+
+let cambiosPendientes = false;
+
+document.querySelectorAll("input[type='number']").forEach(input => {
+    input.addEventListener("input", function () {
+        this.classList.add("modificada");
+
+        if (!cambiosPendientes) {
+            cambiosPendientes = true;
+            document.getElementById("mensaje-cambios").style.display = "block";
+        }
+    });
+});
+
+document.querySelector("form").addEventListener("submit", function () {
+    document.getElementById("mensaje-cambios").style.display = "none";
+    cambiosPendientes = false;
+});
+
+</script>
+
+{% endblock %}

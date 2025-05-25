@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}FinanzApp{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            color: #1A1A1A;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        nav a {
+            margin-left: 24px;
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .contenido {
+            padding: 32px;
+            text-align: center;
+        }
+
+        .botones {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .botones a {
+            text-decoration: none; /* 🔹 Elimina subrayado en los enlaces */
+        }
+
+        .boton {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .boton-azul {
+            background-color: #0057FF;
+            color: white;
+            border: 1px solid #0057FF;
+        }
+
+        .boton-blanco {
+            background-color: white;
+            border: 1px solid #0057FF;
+            color: #0057FF;
+        }
+    </style>
+    <style>
+    @media (max-width: 576px) {
+        .texto-guardar {
+            display: none;
+        }
+    }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">💸 FinanzApp</div>
+        <nav>
+            <a href="/invierte">Invierte</a>
+            <a href="/aprende">Aprende</a>
+            <a href="/perfil">Perfil</a>
+        </nav>
+    </header>
+
+    <div class="contenido">
+        <h1>Hola {{ nombre }} 👋</h1>
+        <p>Llevas controlando tus finanzas hace {{ dias }} días</p>
+
+        <div class="botones">
+            <a href="/panel">
+                <button class="boton {% if activo == 'resumen' %}boton-azul{% else %}boton-blanco{% endif %}">
+                    📊 Resumen Mensual
+                </button>
+            </a>
+            <a href="/presupuesto">
+                <button class="boton {% if activo == 'presupuesto' %}boton-azul{% else %}boton-blanco{% endif %}">
+                    📅 Presupuesto Anual
+                </button>
+            </a>
+            <a href="/real">
+                <button class="boton {% if activo == 'real' %}boton-azul{% else %}boton-blanco{% endif %}">
+                    💵 Real
+                </button>
+            </a>
+        </div>
+
+        
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for message in messages %}
+        <li style="color: green;">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+    </div>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>
