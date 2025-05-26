@@ -8,11 +8,14 @@ from datetime import datetime
 # 🔹 Configuración Flask
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///finanzas.db"
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "instance", "finanzas.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 
-# 🔹 Login Manager
+# 🔹 Configurar Login
 login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.init_app(app)
@@ -21,32 +24,39 @@ login_manager.init_app(app)
 def load_user(user_id):
     return Usuario.query.get(int(user_id))
 
-# 🔹 Ruta de bienvenida pública
+
+# 🔹 Página de Bienvenida Pública
 @app.route("/")
 def bienvenida():
     if current_user.is_authenticated:
         return redirect(url_for("panel"))
     return render_template("bienvenida.html")
 
-# 🔹 Panel principal con días activos
+
+# 🔹 Panel Principal estilo Fintual (requiere login)
 @app.route("/panel")
 @login_required
 def panel():
+    # Calcula los días desde que el usuario creó su cuenta
     dias_activo = (datetime.utcnow() - current_user.fecha_creacion).days
-    return render_template("index.html", nombre=current_user.nombre, dias=dias_activo)
 
-# 🔹 Registro de usuario
+    # Renderiza el panel con los datos dinámicos
+    return render_template(
+        "index.html",        # Usa tu nuevo index.html con estilo Fintual
+        nombre=current_user.nombre,
+        dias=dias_activo
+    )
+
+# 🔹 Página de Registro
 @app.route("/registro", methods=["GET", "POST"])
 def registro():
     if request.method == "POST":
         nombre = request.form["nombre"]
         email = request.form["email"]
         contraseña = request.form["contraseña"]
-
         if Usuario.query.filter_by(email=email).first():
             flash("El correo ya está registrado.")
             return redirect(url_for("registro"))
-
         nuevo_usuario = Usuario(
             nombre=nombre,
             email=email,
@@ -57,23 +67,22 @@ def registro():
         db.session.commit()
         flash("Cuenta creada con éxito. Inicia sesión.")
         return redirect(url_for("login"))
-
     return render_template("registro.html")
 
-# 🔹 Login
+
+# 🔹 Página de Login
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         email = request.form["email"]
         contraseña = request.form["contraseña"]
         usuario = Usuario.query.filter_by(email=email).first()
-
         if usuario and check_password_hash(usuario.contraseña, contraseña):
             login_user(usuario)
             return redirect(url_for("panel"))
-
         flash("Credenciales incorrectas")
     return render_template("login.html")
+
 
 # 🔹 Logout
 @app.route("/logout")
@@ -82,14 +91,16 @@ def logout():
     logout_user()
     return redirect(url_for("login"))
 
-# 🔹 Transacciones del usuario
+
+# 🔹 Página de Transacciones
 @app.route("/transacciones")
 @login_required
 def transacciones():
     transacciones = Transaccion.query.filter_by(usuario_id=current_user.id).all()
     return render_template("transacciones.html", transacciones=transacciones)
 
-# 🔹 Vista de categorías y subcategorías
+
+# 🔹 Página de Categorías
 @app.route("/categorias")
 @login_required
 def mostrar_categorias():
@@ -97,20 +108,26 @@ def mostrar_categorias():
     subcategorias = Categoria.query.filter(Categoria.parent_id.isnot(None), Categoria.usuario_id == current_user.id).all()
     return render_template("categorias.html", categorias=categorias, subcategorias=subcategorias)
 
-# 🔹 Panel de administración (opcional)
+
+# 🔹 Página Admin
 @app.route("/admin")
 @login_required
 def admin_dashboard():
+    total_categorias = Categoria.query.count()
+    total_subcategorias = Categoria.query.filter(Categoria.parent_id.isnot(None)).count()
+    total_transacciones = Transaccion.query.count()
+    total_presupuestos = Presupuesto.query.count()
+    total_resumenes = ResumenMensual.query.count()
+
     return render_template("admin.html",
-        total_categorias=Categoria.query.count(),
-        total_subcategorias=Categoria.query.filter(Categoria.parent_id.isnot(None)).count(),
-        total_transacciones=Transaccion.query.count(),
-        total_presupuestos=Presupuesto.query.count(),
-        total_resumenes=ResumenMensual.query.count()
+        total_categorias=total_categorias,
+        total_subcategorias=total_subcategorias,
+        total_transacciones=total_transacciones,
+        total_presupuestos=total_presupuestos,
+        total_resumenes=total_resumenes
     )
 
-# 🔹 Página de presupuesto anual
-@app.route("/presupuesto", methods=["GET"])
+@app.route("/presupuesto")
 @login_required
 def presupuesto():
     año_actual = datetime.now().year
@@ -130,6 +147,7 @@ def presupuesto():
 
     presupuestos = Presupuesto.query.filter_by(usuario_id=current_user.id).all()
 
+    # 🧠 Cargar data y sus IDs
     data = {}
     data_ids = {}
     for cat in categorias_ingreso:
@@ -139,14 +157,15 @@ def presupuesto():
             if p.categoria_id == cat.id:
                 data[cat.nombre][p.mes] = p.monto_presupuestado
 
+    # ✅ Devuelve data y data_ids a la plantilla
     return render_template("presupuesto.html", años=años, año_actual=año_actual, data=data, data_ids=data_ids)
 
-# 🔹 Guardar presupuesto
+
 @app.route("/presupuesto/guardar", methods=["POST"])
 @login_required
 def guardar_presupuesto():
     año = int(request.form.get("año"))
-
+    
     for key in request.form:
         if key.startswith("presupuesto"):
             import re
@@ -154,11 +173,6 @@ def guardar_presupuesto():
             if match:
                 categoria_nombre = match.group(1)
                 mes = int(match.group(2))
-
-                # 🛑 Ignorar fila si no fue confirmada
-                if categoria_nombre.lower().startswith("nueva_categoria") and f"presupuesto[{categoria_nombre}][nombre]" not in request.form:
-                    continue
-
                 try:
                     monto = float(request.form[key])
                 except:
@@ -202,14 +216,14 @@ def guardar_presupuesto():
     flash("✅ Presupuesto guardado correctamente.")
     return redirect(url_for("presupuesto"))
 
-# 🔹 Eliminar categoría
 @app.route("/categoria/eliminar", methods=["POST"])
 @login_required
 def eliminar_categoria():
     categoria_id = request.form.get("categoria_id")
     categoria = Categoria.query.filter_by(id=categoria_id, usuario_id=current_user.id).first()
-
+    
     if categoria:
+        # Elimina presupuestos relacionados primero
         Presupuesto.query.filter_by(categoria_id=categoria.id, usuario_id=current_user.id).delete()
         db.session.delete(categoria)
         db.session.commit()
@@ -219,12 +233,13 @@ def eliminar_categoria():
 
     return redirect(url_for("presupuesto"))
 
-# 🔹 Vista real (placeholder)
+
 @app.route("/real")
 @login_required
 def real():
     dias_activo = (datetime.utcnow() - current_user.fecha_creacion).days
     return render_template("real.html", nombre=current_user.nombre, dias=dias_activo, activo="real")
+
 
 # 🔹 Ejecutar localmente
 if __name__ == "__main__":
