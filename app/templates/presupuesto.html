@@ -10,7 +10,7 @@
         Presupuesto Anual
     </h2>
 
-    <form method="POST" action="{{ url_for('guardar_presupuesto') }}">
+    <form method="POST" action="{{ url_for('presupuesto.guardar_presupuesto') }}">
         <input type="hidden" name="año" value="{{ año_actual }}">
 
         <!-- 🆕 Espaciado visual entre selector y tabla -->
@@ -74,10 +74,10 @@
                     </tr>
                 {% endfor %}
                 <tr class="nueva-fila" style="display: none;">
-                    <td style="background-color: #FFF3C4;"><input type="text" name="nueva_categoria" placeholder="Nueva categoría" /></td>
+                    <td style="background-color: #FFF3C4;"><input type="text" name="nueva_categoria" id="input-nueva-categoria" class="nombre-nueva-categoria" placeholder="Nueva categoría" /></td>
                     {% for mes in range(1, 13) %}
                         <td style="background-color: #FFF9E6;">
-                            <input type="text" inputmode="numeric" pattern="[0-9\.]*" name="presupuesto[nueva_categoria][{{ mes }}]" value="0" style="width: 60px;" />
+                            <input type="number" inputmode="numeric" pattern="[0-9\.]*" name="presupuesto[nueva_categoria][{{ mes }}]" value="0" style="width: 60px;" />
                         </td>
                     {% endfor %}
                     <td></td>
@@ -102,7 +102,7 @@
 <div id="modal-confirmacion" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); z-index: 1000;">
     <div style="background-color: white; padding: 20px; border-radius: 8px; width: 300px; margin: 150px auto; text-align: center;">
         <p>¿Estás seguro de que quieres eliminar esta categoría?</p>
-        <form method="POST" action="{{ url_for('eliminar_categoria') }}">
+        <form method="POST" action="{{ url_for('presupuesto.eliminar_categoria') }}">
             <input type="hidden" id="id-categoria-a-eliminar" name="categoria_id" />
             <button type="submit" style="margin-right: 8px;">Sí, eliminar</button>
             <button type="button" onclick="cerrarModal()">Cancelar</button>
@@ -126,26 +126,16 @@
 let spanParaRenombrar = null;
 
 window.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("input").forEach(input => {
-        input.addEventListener("keydown", function (e) {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                this.form.submit();
-            }
-        });
-    });
-    // ⚙️ Menú por fila
+    // Mostrar menú de opciones ⚙️
     document.querySelectorAll(".btn-opciones").forEach(btn => {
         btn.addEventListener("click", function (e) {
             e.preventDefault();
-
             const menu = this.closest("td").querySelector(".menu-opciones");
             document.querySelectorAll(".menu-opciones").forEach(m => m.style.display = "none");
 
             const rect = this.getBoundingClientRect();
             menu.style.top = `${rect.bottom + window.scrollY}px`;
             menu.style.left = `${rect.left + window.scrollX}px`;
-
             menu.style.display = "block";
         });
     });
@@ -159,7 +149,7 @@ window.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // ✏️ Renombrar
+    // Renombrar categoría
     document.querySelectorAll(".renombrar").forEach(opcion => {
         opcion.addEventListener("click", function (e) {
             e.preventDefault();
@@ -175,9 +165,9 @@ window.addEventListener("DOMContentLoaded", function () {
         if (nuevoNombre && spanParaRenombrar) {
             spanParaRenombrar.textContent = nuevoNombre;
             const fila = spanParaRenombrar.closest("tr");
-            fila.querySelectorAll("input[type='number']").forEach(input => {
-                const mes = input.name.match(/\[(\d{1,2})\]/)[1];
-                input.name = `presupuesto[${nuevoNombre}][${mes}]`;
+            fila.querySelectorAll("input").forEach(input => {
+                const mes = input.name.match(/\[(\d{1,2})\]/);
+                if (mes) input.name = `presupuesto[${nuevoNombre}][${mes[1]}]`;
             });
             cerrarModalRenombrar();
         }
@@ -187,7 +177,7 @@ window.addEventListener("DOMContentLoaded", function () {
         document.getElementById("modal-renombrar").style.display = "none";
     }
 
-    // 🗑️ Eliminar
+    // Eliminar categoría
     document.querySelectorAll(".eliminar").forEach(opcion => {
         opcion.addEventListener("click", function (e) {
             e.preventDefault();
@@ -198,48 +188,52 @@ window.addEventListener("DOMContentLoaded", function () {
         });
     });
 
+    // Añadir categoría nueva
     document.getElementById("añadir-categoria").addEventListener("click", function (e) {
         e.preventDefault();
-        const nuevaFila = document.querySelector(".nueva-fila");
-        nuevaFila.style.display = "table-row";
-        const inputNombre = nuevaFila.querySelector("input[name='nueva_categoria']");
+        const fila = document.querySelector(".nueva-fila");
+        fila.style.display = "table-row";
+        const inputNombre = fila.querySelector("input[name='nueva_categoria']");
         inputNombre.focus();
 
         inputNombre.addEventListener("blur", () => {
             if (!inputNombre.value.trim()) {
-                nuevaFila.style.display = "none";
+                fila.style.display = "none";
                 inputNombre.value = "";
             }
         });
     });
 
+    // Validar y transformar nombres antes de enviar
     document.querySelector("form").addEventListener("submit", function (e) {
-        const nuevaFila = document.querySelector(".nueva-fila");
-        if (nuevaFila && nuevaFila.style.display !== "none") {
-            const nombreInput = nuevaFila.querySelector("input[name='nueva_categoria']");
-            const nombreReal = nombreInput.value.trim();
-            if (nombreReal) {
-                const inputs = nuevaFila.querySelectorAll("input[name^='presupuesto[nueva_categoria]']");
-                inputs.forEach(input => {
-                    const mes = input.name.match(/\[(\d{1,2})\]/)[1];
-                    input.name = `presupuesto[${nombreReal}][${mes}]`;
-                });
-                nombreInput.name = `presupuesto[${nombreReal}][nombre]`;
-            } else {
+        const fila = document.querySelector(".nueva-fila");
+        if (fila && fila.style.display !== "none") {
+            const inputNombre = fila.querySelector("input[name='nueva_categoria']");
+            const nombreReal = inputNombre.value.trim();
+            if (!nombreReal) {
                 e.preventDefault();
                 alert("Debes ingresar un nombre para la nueva categoría.");
+                return;
             }
+
+            fila.querySelectorAll("input").forEach(input => {
+                if (input.name.includes("[nueva_categoria]")) {
+                    const mes = input.name.match(/\[(\d{1,2})\]/);
+                    if (mes) input.name = `presupuesto[${nombreReal}][${mes[1]}]`;
+                }
+            });
+            inputNombre.name = `presupuesto[${nombreReal}][nombre]`;
         }
     });
 
-    // 📊 Cálculo dinámico de totales
+    // Calcular totales dinámicos
     function actualizarTotales() {
         const totales = Array(12).fill(0);
         document.querySelectorAll("tbody tr").forEach(fila => {
             const celdas = fila.querySelectorAll("td");
             celdas.forEach((celda, idx) => {
                 if (idx >= 1 && idx <= 12) {
-                    const input = celda.querySelector("input[type='number']");
+                    const input = celda.querySelector("input");
                     if (input) {
                         const valor = parseFloat(input.value.replace(",", ".")) || 0;
                         totales[idx - 1] += valor;
@@ -247,21 +241,28 @@ window.addEventListener("DOMContentLoaded", function () {
                 }
             });
         });
+
         totales.forEach((total, i) => {
             const celdaTotal = document.getElementById(`total-mes-${i + 1}`);
             if (celdaTotal) {
-                celdaTotal.textContent = total.toLocaleString("es-CL", { minimumFractionDigits: 0 });
+                celdaTotal.textContent = total.toLocaleString("es-CL", {
+                    minimumFractionDigits: 0
+                });
             }
         });
     }
 
+    // Ejecutar una vez al cargar
     actualizarTotales();
-    document.querySelectorAll("input[type='number']").forEach(input => {
+
+    // Listener para inputs existentes
+    document.querySelectorAll("tbody input").forEach(input => {
         input.addEventListener("input", actualizarTotales);
     });
 
+    // Listener para inputs nuevos
     const observer = new MutationObserver(() => {
-        document.querySelectorAll("input[type='number']").forEach(input => {
+        document.querySelectorAll("tbody input").forEach(input => {
             if (!input.dataset.listenerAttached) {
                 input.addEventListener("input", actualizarTotales);
                 input.dataset.listenerAttached = "true";
@@ -275,5 +276,7 @@ function cerrarModal() {
     document.getElementById("modal-confirmacion").style.display = "none";
 }
 </script>
+
+
 
 {% endblock %}
