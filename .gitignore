@@ -1,7 +1,6 @@
 __pycache__/
 *.pyc
 *.db
-instance/
 venv/
 venv_finanzas/
 instance/finanzas.db
