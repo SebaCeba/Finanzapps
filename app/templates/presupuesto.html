@@ -3,280 +3,515 @@
 {% block title %}Presupuesto Anual | FinanzApp{% endblock %}
 
 {% block content %}
+<style>
+    * { box-sizing: border-box; }
+    html, body { background: #fff; }
+    .presupuesto-scroll-x { overflow-x: auto; width: 100%; }
+    .tabla-bloque {
+        border-collapse: collapse;
+        width: max-content;
+        min-width: 1200px;
+        font-size: 17px;
+    }
+    .tabla-bloque th,
+    .tabla-bloque td {
+        border: 1px solid #eee;
+        padding: 6px 8px;
+        text-align: center;
+        vertical-align: middle;
+        background: #fff;
+        height: 48px;
+        min-width: 90px;
+        max-width: 110px;
+    }
+    .tabla-bloque th { background: #fafafa; }
+    .tabla-bloque th.menu-acciones,
+    .tabla-bloque td.menu-acciones {
+        width: 42px;
+        min-width: 42px;
+        max-width: 42px;
+        position: sticky;
+        left: 0;
+        z-index: 12;
+        background: #F6D6AD;
+    }
+    .tabla-bloque th.sticky-categoria,
+    .tabla-bloque td.sticky-categoria {
+        width: 180px;
+        min-width: 180px;
+        max-width: 180px;
+        position: sticky;
+        left: 42px;
+        background: #fff;
+        z-index: 11;
+        text-align: left;
+    }
+    .tabla-bloque thead th.menu-acciones { 
+        top: 0; left: 0; z-index: 20; background: #F6D6AD;
+    }
+    .tabla-bloque thead th.sticky-categoria {
+        top: 0; left: 42px; z-index: 19; background: #fff;
+    }
+    .tabla-bloque thead th { 
+        position: sticky; 
+        top: 0;
+        z-index: 10;
+        background: #fafafa;
+    }
+    .tabla-bloque input[type="text"] {
+        width: 100%;
+        min-width: 56px;
+        max-width: 100px;
+        box-sizing: border-box;
+        padding: 3px 4px;
+        font-size: 16px;
+    }
+    .dropdown-btn {
+        background: none;
+        border: none;
+        font-size: 22px;
+        cursor: pointer;
+        padding: 3px 9px;
+        border-radius: 7px;
+        transition: background .2s;
+        position: relative;
+        z-index: 2;
+    }
+    .dropdown-btn:focus,
+    .dropdown-btn:hover {
+        background: #eee;
+    }
+    .floating-menu {
+        display: none;
+        position: fixed;
+        min-width: 140px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 9px;
+        box-shadow: 0 6px 24px #0002;
+        z-index: 9999;
+        animation: showDropdown .12s;
+        padding: 4px 0;
+        user-select: none;
+    }
+    .floating-menu.open { display: block; }
+    .floating-menu button {
+        width: 100%;
+        text-align: left;
+        padding: 8px 16px 8px 36px;
+        background: none;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: background .14s;
+        outline: none;
+        position: relative;
+    }
+    .btn-editar-categoria {
+        color: #0057FF;
+        border-radius: 7px 7px 0 0;
+    }
+    .btn-editar-categoria:before {
+        content: "✏️";
+        position: absolute;
+        left: 12px;
+        font-size: 16px;
+    }
+    .btn-eliminar-categoria {
+        color: #D7263D;
+        border-radius: 0 0 7px 7px;
+    }
+    .btn-eliminar-categoria:before {
+        content: "🗑️";
+        position: absolute;
+        left: 12px;
+        font-size: 16px;
+    }
+    .floating-menu button:hover { background: #f5f5f5; }
+    .nombre-categoria { font-weight: 500; margin-left: 0.25rem; }
+    .añadir-categoria { color: #0057FF; font-weight: bold; display: inline-block; margin-top: 8px; margin-bottom: 0; }
+    .boton-azul { background: #0057FF; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-size: 16px; font-weight: 500; cursor: pointer; transition: background .2s; }
+    .boton-azul:hover { background: #0042bb; }
+    .seccion-presupuesto { margin-bottom: 40px; }
+    h3.bloque-titulo {
+        margin: 28px 0 6px 0;
+        text-align: left;
+        font-size: 20px;
+        font-weight: 600;
+        color: #2d2d2d;
+        padding-left: 4px;
+    }
+    @keyframes showDropdown {
+        from { opacity: 0; transform: scaleY(.95); }
+        to { opacity: 1; transform: scaleY(1); }
+    }
+</style>
+
 <div style="margin: 32px;">
+    <h2 style="text-align: center; font-size: 24px; margin-top: 32px; margin-bottom: 24px;">Presupuesto Anual</h2>
+    <div style="text-align: right; margin-bottom: 24px;">
+        <button id="guardar-todos" class="boton boton-azul" style="font-weight: bold;">
+            💾 Guardar todos los cambios
+        </button>
+    </div>
 
-    <!-- 🆕 Mejora visual del título -->
-    <h2 style="text-align: center; font-size: 24px; margin-top: 32px; margin-bottom: 24px;">
-        Presupuesto Anual
-    </h2>
+    <!-- Menú flotante global -->
+    <div id="floatingMenu" class="floating-menu"></div>
 
-    <form method="POST" action="{{ url_for('presupuesto.guardar_presupuesto') }}">
+    <div class="presupuesto-scroll-x">
+    {% for tipo, nombre_bloque in [("ingreso", "Ingresos"), ("gasto_fijo", "Necesidades"), ("gasto_variable", "Deseos"), ("ahorro", "Ahorro/Deuda")] %}
+    <div class="seccion-presupuesto">
+    <h3 class="bloque-titulo">{{ nombre_bloque }}</h3>
+    <form method="POST" action="{{ url_for('presupuesto.guardar_presupuesto') }}" class="form-bloque">
         <input type="hidden" name="año" value="{{ año_actual }}">
-
-        <!-- 🆕 Espaciado visual entre selector y tabla -->
-        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 32px;">
-            <label style="margin-right: 8px;">Año Ppto</label>
-            <select name="año" style="font-size: 16px; padding: 4px 8px;">
-                {% for año in años %}
-                    <option value="{{ año }}" {% if año == año_actual %}selected{% endif %}>{{ año }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- 🆕 Encapsulado de tabla para scroll horizontal en pantallas pequeñas -->
-        <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: center;">
+        <input type="hidden" name="tipo_actual" value="{{ tipo }}">
+        <table class="tabla-bloque">
             <thead>
                 <tr>
-                    <th style="background-color: white;"></th>
+                    <th class="menu-acciones"></th>
+                    <th class="sticky-categoria">Categoría</th>
                     {% for mes in ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"] %}
-                        <th style="border: 1px solid #ccc;">{{ mes }}</th>
+                        <th>{{ mes }}</th>
                     {% endfor %}
-                    <th></th>
-                </tr>
-                <tr id="fila-ingresos">
-                    <th style="background-color: #FFD700;">Ingresos</th>
-                    {% for i in range(12) %}
-                        <th id="total-mes-{{ i+1 }}" style="background-color: #FFD700;">0</th>
-                    {% endfor %}
-                    <th></th>
                 </tr>
             </thead>
             <tbody>
-                {% for categoria, montos in data.items() %}
+                {% for categoria, montos in data.items() if data_tipos[categoria] == tipo %}
                     <tr>
-                        <td style="background-color: #FFF3C4; position: relative;">
-                            <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-start;">
-                                <a href="#" class="btn-opciones" style="font-size: 18px; text-decoration: none;">⚙️</a>
-                                <span class="nombre-categoria">{{ categoria }}</span>
-                                <input type="hidden" class="categoria-id" value="{{ data_ids[categoria] }}">
-                            </div>
-                            <div class="menu-opciones" style="
-                                display: none;
-                                position: fixed; /* Antes: absolute */
-                                background-color: #fff;
-                                border: 1px solid #ccc;
-                                border-radius: 6px;
-                                box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-                                z-index: 1001;
-                                min-width: 120px;
-                            ">
-                                <a href="#" class="renombrar" style="display: block; padding: 8px; text-align: left; text-decoration: none; color: #333;">✏️ Renombrar</a>
-                                <a href="#" class="eliminar" style="display: block; padding: 8px; text-align: left; text-decoration: none; color: #d00;">🗑️ Eliminar</a>
-                            </div>
+                        <td class="menu-acciones">
+                            <button type="button" class="dropdown-btn" 
+                                data-categoria="{{ categoria }}"
+                                data-categoria-id="{{ data_ids[categoria] }}"
+                                data-form-index="{{ loop.index0 }}"
+                                title="Opciones" tabindex="0">⋮
+                            </button>
+                        </td>
+                        <td class="sticky-categoria">
+                            <span class="nombre-categoria" data-categoria-id="{{ data_ids[categoria] }}">{{ categoria }}</span>
+                            <input type="hidden" class="categoria-id" value="{{ data_ids[categoria] }}">
                         </td>
                         {% for mes in range(1, 13) %}
-                            <td style="background-color: #FFF9E6;">
-                                <input type="text" inputmode="numeric" pattern="[0-9\.]*" name="presupuesto[{{ categoria }}][{{ mes }}]" value="{{ montos[mes] }}" style="width: 60px; padding: 4px;" />
+                            <td>
+                                <input type="text" inputmode="numeric" pattern="[0-9\.]*" name="presupuesto[{{ categoria }}][{{ mes }}]" value="{{ montos[mes] }}" />
                             </td>
                         {% endfor %}
-                        <td></td>
                     </tr>
                 {% endfor %}
                 <tr class="nueva-fila" style="display: none;">
-                    <td style="background-color: #FFF3C4;"><input type="text" name="nueva_categoria" id="input-nueva-categoria" class="nombre-nueva-categoria" placeholder="Nueva categoría" /></td>
+                    <td class="menu-acciones"></td>
+                    <td class="sticky-categoria">
+                        <input type="text" name="nueva_categoria" placeholder="Nueva categoría" />
+                    </td>
                     {% for mes in range(1, 13) %}
-                        <td style="background-color: #FFF9E6;">
-                            <input type="number" inputmode="numeric" pattern="[0-9\.]*" name="presupuesto[nueva_categoria][{{ mes }}]" value="0" style="width: 60px;" />
+                        <td>
+                            <input type="text" inputmode="numeric" pattern="[0-9\.]*" name="presupuesto[nueva_categoria][{{ mes }}]" value="0" />
                         </td>
                     {% endfor %}
-                    <td></td>
                 </tr>
             </tbody>
         </table>
-        </div> <!-- scroll horizontal -->
-
-        <div style="text-align: left; margin-top: 12px;">
-            <a href="#" id="añadir-categoria" style="color: #0057FF; font-weight: bold;">+ Añadir categoría</a>
-        </div>
-
-        <div style="text-align: right; margin-top: 24px;">
-            <button type="submit" class="boton boton-azul">
-                💾 <span class="texto-guardar">Guardar cambios</span>
-            </button>
+        <div style="margin-top: 6px; text-align: left;">
+            <a href="#" class="añadir-categoria">+ Añadir categoría</a>
         </div>
     </form>
-</div>
-
-<!-- Modal Eliminar -->
-<div id="modal-confirmacion" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); z-index: 1000;">
-    <div style="background-color: white; padding: 20px; border-radius: 8px; width: 300px; margin: 150px auto; text-align: center;">
-        <p>¿Estás seguro de que quieres eliminar esta categoría?</p>
-        <form method="POST" action="{{ url_for('presupuesto.eliminar_categoria') }}">
-            <input type="hidden" id="id-categoria-a-eliminar" name="categoria_id" />
-            <button type="submit" style="margin-right: 8px;">Sí, eliminar</button>
-            <button type="button" onclick="cerrarModal()">Cancelar</button>
-        </form>
     </div>
-</div>
-
-<!-- Modal Renombrar -->
-<div id="modal-renombrar" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); z-index: 1000;">
-    <div style="background-color: white; padding: 20px; border-radius: 8px; width: 300px; margin: 150px auto; text-align: center;">
-        <p>Nuevo nombre de categoría:</p>
-        <input type="text" id="input-nuevo-nombre" style="width: 90%; padding: 8px;" />
-        <div style="margin-top: 16px;">
-            <button id="confirmar-renombrar" style="margin-right: 8px;">Renombrar</button>
-            <button type="button" onclick="cerrarModalRenombrar()">Cancelar</button>
-        </div>
+    {% endfor %}
     </div>
 </div>
 
 <script>
-let spanParaRenombrar = null;
-
 window.addEventListener("DOMContentLoaded", function () {
-    // Mostrar menú de opciones ⚙️
-    document.querySelectorAll(".btn-opciones").forEach(btn => {
-        btn.addEventListener("click", function (e) {
-            e.preventDefault();
-            const menu = this.closest("td").querySelector(".menu-opciones");
-            document.querySelectorAll(".menu-opciones").forEach(m => m.style.display = "none");
+    // --- SCROLL y FOCO RESTORE ---
+    function saveScroll() {
+        localStorage.setItem('scrollTopPresupuesto', window.scrollY);
+        const scrollDiv = document.querySelector('.presupuesto-scroll-x');
+        if (scrollDiv) {
+            localStorage.setItem('scrollLeftPresupuesto', scrollDiv.scrollLeft);
+        }
+    }
+    function restoreScroll() {
+        const y = localStorage.getItem('scrollTopPresupuesto');
+        const x = localStorage.getItem('scrollLeftPresupuesto');
+        if (y !== null) window.scrollTo(0, parseInt(y));
+        const scrollDiv = document.querySelector('.presupuesto-scroll-x');
+        if (x !== null && scrollDiv) scrollDiv.scrollLeft = parseInt(x);
+        localStorage.removeItem('scrollTopPresupuesto');
+        localStorage.removeItem('scrollLeftPresupuesto');
+    }
+    // FOCO EN CELDA ACTIVA TRAS GUARDADO
+    function saveActiveInput() {
+        const active = document.activeElement;
+        if (active && active.tagName === 'INPUT' && active.name) {
+            localStorage.setItem('lastInputName', active.name);
+        }
+    }
+    function restoreActiveInput() {
+        const name = localStorage.getItem('lastInputName');
+        if (name) {
+            setTimeout(() => {
+                const input = document.querySelector(`input[name="${CSS.escape(name)}"]`);
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+                localStorage.removeItem('lastInputName');
+            }, 120);
+        }
+    }
+    restoreScroll();
+    restoreActiveInput();
 
-            const rect = this.getBoundingClientRect();
-            menu.style.top = `${rect.bottom + window.scrollY}px`;
-            menu.style.left = `${rect.left + window.scrollX}px`;
-            menu.style.display = "block";
-        });
+    document.getElementById('guardar-todos').addEventListener('click', function() {
+        saveScroll();
+        saveActiveInput();
     });
 
-    // Cerrar menús al hacer clic fuera
-    document.addEventListener("click", function (event) {
-        document.querySelectorAll(".menu-opciones").forEach(menu => {
-            if (!menu.contains(event.target) && !event.target.classList.contains("btn-opciones")) {
-                menu.style.display = "none";
+    // Guardar todos los formularios a la vez con el botón principal (AJAX)
+    document.getElementById('guardar-todos').addEventListener('click', async function(e) {
+        e.preventDefault();
+        const forms = Array.from(document.querySelectorAll('.form-bloque'));
+        let success = true;
+        for (const form of forms) {
+            const formData = new FormData(form);
+            try {
+                const resp = await fetch(form.action, {
+                    method: form.method,
+                    body: formData
+                });
+                if (!resp.ok) success = false;
+            } catch (err) {
+                success = false;
             }
-        });
-    });
-
-    // Renombrar categoría
-    document.querySelectorAll(".renombrar").forEach(opcion => {
-        opcion.addEventListener("click", function (e) {
-            e.preventDefault();
-            spanParaRenombrar = this.closest("td").querySelector(".nombre-categoria");
-            document.getElementById("input-nuevo-nombre").value = spanParaRenombrar.textContent;
-            document.getElementById("modal-renombrar").style.display = "block";
-            this.parentElement.style.display = "none";
-        });
-    });
-
-    document.getElementById("confirmar-renombrar").addEventListener("click", function () {
-        const nuevoNombre = document.getElementById("input-nuevo-nombre").value.trim();
-        if (nuevoNombre && spanParaRenombrar) {
-            spanParaRenombrar.textContent = nuevoNombre;
-            const fila = spanParaRenombrar.closest("tr");
-            fila.querySelectorAll("input").forEach(input => {
-                const mes = input.name.match(/\[(\d{1,2})\]/);
-                if (mes) input.name = `presupuesto[${nuevoNombre}][${mes[1]}]`;
-            });
-            cerrarModalRenombrar();
+        }
+        if (success) {
+            location.reload();
+        } else {
+            alert("Error al guardar. Intenta nuevamente.");
         }
     });
 
-    function cerrarModalRenombrar() {
-        document.getElementById("modal-renombrar").style.display = "none";
-    }
-
-    // Eliminar categoría
-    document.querySelectorAll(".eliminar").forEach(opcion => {
-        opcion.addEventListener("click", function (e) {
+    document.querySelectorAll(".añadir-categoria").forEach(boton => {
+        boton.addEventListener("click", function (e) {
             e.preventDefault();
-            const id = this.closest("td").querySelector(".categoria-id").value;
-            document.getElementById("id-categoria-a-eliminar").value = id;
-            document.getElementById("modal-confirmacion").style.display = "block";
-            this.parentElement.style.display = "none";
+            const form = boton.closest("form");
+            const nuevaFila = form.querySelector(".nueva-fila");
+            nuevaFila.style.display = "table-row";
+
+            const inputNombre = nuevaFila.querySelector("input[name='nueva_categoria']");
+            inputNombre.focus();
+
+            // Remueve listeners previos para evitar duplicados
+            inputNombre.onkeydown = null;
+
+            // Listener para Enter (guarda al presionar Enter)
+            inputNombre.addEventListener("keydown", function(ev) {
+                if (ev.key === "Enter") {
+                    ev.preventDefault();
+                    saveActiveInput();
+                    form.requestSubmit();
+                }
+            });
+
+            inputNombre.addEventListener("blur", () => {
+                if (!inputNombre.value.trim()) {
+                    nuevaFila.style.display = "none";
+                    inputNombre.value = "";
+                }
+            });
         });
     });
 
-    // Añadir categoría nueva
-    document.getElementById("añadir-categoria").addEventListener("click", function (e) {
-        e.preventDefault();
-        const fila = document.querySelector(".nueva-fila");
-        fila.style.display = "table-row";
-        const inputNombre = fila.querySelector("input[name='nueva_categoria']");
-        inputNombre.focus();
-
-        inputNombre.addEventListener("blur", () => {
-            if (!inputNombre.value.trim()) {
-                fila.style.display = "none";
-                inputNombre.value = "";
+    document.querySelectorAll("form").forEach(form => {
+        form.addEventListener("submit", function (e) {
+            const nuevaFila = form.querySelector(".nueva-fila");
+            if (nuevaFila && nuevaFila.style.display !== "none") {
+                const nombreInput = nuevaFila.querySelector("input[name='nueva_categoria']");
+                const nombreReal = nombreInput.value.trim();
+                if (nombreReal) {
+                    const inputs = nuevaFila.querySelectorAll("input[name^='presupuesto[nueva_categoria]']");
+                    inputs.forEach(input => {
+                        const mes = input.name.match(/\[(\d{1,2})\]/)[1];
+                        input.name = `presupuesto[${nombreReal}][${mes}]`;
+                    });
+                    nombreInput.name = `presupuesto[${nombreReal}][nombre]`;
+                } else {
+                    e.preventDefault();
+                    alert("Debes ingresar un nombre para la nueva categoría.");
+                }
             }
         });
     });
 
-    // Validar y transformar nombres antes de enviar
-    document.querySelector("form").addEventListener("submit", function (e) {
-        const fila = document.querySelector(".nueva-fila");
-        if (fila && fila.style.display !== "none") {
-            const inputNombre = fila.querySelector("input[name='nueva_categoria']");
-            const nombreReal = inputNombre.value.trim();
-            if (!nombreReal) {
-                e.preventDefault();
-                alert("Debes ingresar un nombre para la nueva categoría.");
+    // Menú flotante global
+    const floatingMenu = document.getElementById('floatingMenu');
+    let lastBtn = null, currentRow = null;
+
+    // Renderiza el menú flotante sobre el body
+    document.querySelectorAll('.dropdown-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Cierra menú si ya está abierto sobre ese mismo botón
+            if (floatingMenu.classList.contains('open') && lastBtn === btn) {
+                floatingMenu.classList.remove('open');
+                lastBtn = null;
                 return;
             }
 
-            fila.querySelectorAll("input").forEach(input => {
-                if (input.name.includes("[nueva_categoria]")) {
-                    const mes = input.name.match(/\[(\d{1,2})\]/);
-                    if (mes) input.name = `presupuesto[${nombreReal}][${mes[1]}]`;
-                }
-            });
-            inputNombre.name = `presupuesto[${nombreReal}][nombre]`;
-        }
+            // Llenar menú contextual
+            const categoriaId = btn.getAttribute('data-categoria-id');
+            const categoria = btn.getAttribute('data-categoria');
+            const row = btn.closest('tr');
+            currentRow = row;
+
+            floatingMenu.innerHTML = `
+                <button type="button" class="btn-editar-categoria">Editar</button>
+                <form method="POST" action="{{ url_for('presupuesto.eliminar_categoria') }}" style="margin: 0; padding: 0;">
+                    <input type="hidden" name="categoria_id" value="${categoriaId}">
+                    <button type="submit" class="btn-eliminar-categoria">Eliminar</button>
+                </form>
+            `;
+            floatingMenu.classList.add('open');
+
+            // Posicionamiento: Calcula la posición respecto al viewport
+            const rect = btn.getBoundingClientRect();
+            let left = rect.left;
+            let top = rect.bottom + 4;
+
+            // Si no cabe hacia la derecha, ajusta
+            const menuWidth = 150;
+            if (left + menuWidth > window.innerWidth - 10) {
+                left = window.innerWidth - menuWidth - 10;
+            }
+            // Si no cabe abajo, muestra arriba
+            const menuHeight = 98;
+            if (top + menuHeight > window.innerHeight - 5) {
+                top = rect.top - menuHeight - 4;
+            }
+            floatingMenu.style.left = left + 'px';
+            floatingMenu.style.top = top + 'px';
+
+            lastBtn = btn;
+        });
     });
 
-    // Calcular totales dinámicos
-    function actualizarTotales() {
-        const totales = Array(12).fill(0);
-        document.querySelectorAll("tbody tr").forEach(fila => {
-            const celdas = fila.querySelectorAll("td");
-            celdas.forEach((celda, idx) => {
-                if (idx >= 1 && idx <= 12) {
-                    const input = celda.querySelector("input");
-                    if (input) {
-                        const valor = parseFloat(input.value.replace(",", ".")) || 0;
-                        totales[idx - 1] += valor;
+    // Cierra el menú si haces click fuera
+    document.body.addEventListener('click', function() {
+        floatingMenu.classList.remove('open');
+        lastBtn = null;
+    });
+
+    // Maneja acción de editar en el menú flotante
+    floatingMenu.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-editar-categoria')) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!currentRow) return;
+            const contenedor = currentRow.querySelector('td.sticky-categoria');
+            const span = contenedor.querySelector('.nombre-categoria');
+            const categoriaId = span.getAttribute('data-categoria-id');
+            const nombreOriginal = span.textContent.trim();
+
+            document.querySelectorAll('input.input-editar-categoria').forEach(inp => {
+                const parentTd = inp.closest('td');
+                if (parentTd) {
+                    const oldSpan = document.createElement('span');
+                    oldSpan.className = 'nombre-categoria';
+                    oldSpan.textContent = inp.value || inp.dataset.oldValue || '';
+                    oldSpan.setAttribute('data-categoria-id', inp.dataset.categoriaId || '');
+                    parentTd.replaceChild(oldSpan, inp);
+                }
+            });
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = nombreOriginal;
+            input.className = 'input-editar-categoria';
+            input.style.width = '120px';
+            input.style.marginLeft = '4px';
+            input.setAttribute('data-old-value', nombreOriginal);
+            input.setAttribute('data-categoria-id', categoriaId);
+
+            if (span.parentNode === contenedor) {
+                contenedor.replaceChild(input, span);
+            } else {
+                return;
+            }
+            input.focus();
+            input.select();
+
+            function guardar() {
+                const nuevoNombre = input.value.trim();
+                if (!nuevoNombre || nuevoNombre === nombreOriginal) {
+                    if (input.parentNode === contenedor) {
+                        contenedor.replaceChild(span, input);
+                    }
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('categoria_id', categoriaId);
+                formData.append('nuevo_nombre', nuevoNombre);
+
+                fetch('{{ url_for("presupuesto.editar_categoria") }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.success) {
+                        span.textContent = data.nuevo_nombre;
+                        const fila = contenedor.closest('tr');
+                        fila.querySelectorAll('input[name^="presupuesto["]').forEach(inputCelda => {
+                            inputCelda.name = inputCelda.name.replace(nombreOriginal, data.nuevo_nombre);
+                        });
+                    } else {
+                        alert(data.message || "Error al actualizar nombre");
+                    }
+                    if (input.parentNode === contenedor) {
+                        contenedor.replaceChild(span, input);
+                    }
+                })
+                .catch(() => {
+                    alert("Error de red o servidor");
+                    if (input.parentNode === contenedor) {
+                        contenedor.replaceChild(span, input);
+                    }
+                });
+            }
+
+            input.addEventListener('blur', guardar);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    guardar();
+                }
+                if (e.key === 'Escape') {
+                    if (input.parentNode === contenedor) {
+                        contenedor.replaceChild(span, input);
                     }
                 }
             });
-        });
 
-        totales.forEach((total, i) => {
-            const celdaTotal = document.getElementById(`total-mes-${i + 1}`);
-            if (celdaTotal) {
-                celdaTotal.textContent = total.toLocaleString("es-CL", {
-                    minimumFractionDigits: 0
-                });
-            }
-        });
-    }
-
-    // Ejecutar una vez al cargar
-    actualizarTotales();
-
-    // Listener para inputs existentes
-    document.querySelectorAll("tbody input").forEach(input => {
-        input.addEventListener("input", actualizarTotales);
+            floatingMenu.classList.remove('open');
+            lastBtn = null;
+        }
     });
 
-    // Listener para inputs nuevos
-    const observer = new MutationObserver(() => {
-        document.querySelectorAll("tbody input").forEach(input => {
-            if (!input.dataset.listenerAttached) {
-                input.addEventListener("input", actualizarTotales);
-                input.dataset.listenerAttached = "true";
+    // Permite guardar el bloque con Enter desde cualquier input de monto (menos nombre de nueva categoría)
+    document.querySelectorAll('.form-bloque input[type="text"]').forEach(function(input) {
+        if (input.name === 'nueva_categoria') return;
+        input.addEventListener('keydown', function(ev) {
+            if (ev.key === 'Enter') {
+                ev.preventDefault();
+                saveActiveInput();
+                input.closest('form').requestSubmit();
             }
         });
     });
-    observer.observe(document.querySelector("tbody"), { childList: true, subtree: true });
 });
-
-function cerrarModal() {
-    document.getElementById("modal-confirmacion").style.display = "none";
-}
 </script>
-
-
-
 {% endblock %}

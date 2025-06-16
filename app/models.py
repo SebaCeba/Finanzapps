@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
+from sqlalchemy import CheckConstraint
 
 db = SQLAlchemy()  # ✅ definimos aquí
 
@@ -14,12 +15,20 @@ class Usuario(db.Model, UserMixin):
 
 # 🔹 Modelo de Categoría
 class Categoria(db.Model):
+    __tablename__ = 'categoria'
+
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     tipo = db.Column(db.String(20), nullable=False)
     parent_id = db.Column(db.Integer, db.ForeignKey('categoria.id'), nullable=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
 
+    __table_args__ = (
+        CheckConstraint(
+            "tipo IN ('ingreso', 'necesidades', 'deseos', 'ahorro_deuda')",
+            name='check_tipo_categoria'
+        ),
+    )
 # 🔹 Modelo de Transacción
 class Transaccion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
