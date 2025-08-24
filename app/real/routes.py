@@ -1,68 +1,86 @@
 from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
-from app.models import Presupuesto, Categoria, Transaccion, db
-from sqlalchemy import func
+from datetime import datetime
+from app.models import db, Categoria, HechoFinanciero
+import os
 
 real_bp = Blueprint("real", __name__)
 
-@real_bp.route("/real")
+@real_bp.route("/real", strict_slashes=False)
 @login_required
 def vista_real():
-    # Obtener año y mes desde parámetros o usar los primeros disponibles
+    print("🔥 ENTRO A LA FUNCIÓN REAL")
+    print("📂 FUNCION REAL DESDE:", os.path.abspath(__file__))
+
+    # Obtener año desde la URL o usar el actual por defecto
     año_param = request.args.get("año")
     mes_param = request.args.get("mes")
+    año_actual = datetime.utcnow().year
 
-    # Obtener años disponibles desde presupuesto
-    años_disponibles = db.session.query(Presupuesto.año.distinct()).order_by(Presupuesto.año).all()
-    años_disponibles = [a[0] for a in años_disponibles]
+    # AÑOS DISPONIBLES
+    años = db.session.query(Presupuesto.año.distinct()) \
+        .filter(Presupuesto.usuario_id == current_user.id) \
+        .order_by(Presupuesto.año).all()
+    años = [a[0] for a in años]
 
-    if not años_disponibles:
-        return render_template("real.html", data=[], año=None, mes=None, años=[], meses=[])
+    if not años:
+        return render_template("real.html", data=[], año=None, mes=None, años=[], meses=[], mensaje="No hay años disponibles con presupuesto.")
 
-    año = int(año_param) if año_param else años_disponibles[-1]
+    año = int(año_param) if año_param and int(año_param) in años else años[-1]
 
-    # Obtener meses disponibles para ese año
-    meses_disponibles = db.session.query(Presupuesto.mes.distinct()).filter_by(año=año).order_by(Presupuesto.mes).all()
-    meses_disponibles = [m[0] for m in meses_disponibles]
-    mes = int(mes_param) if mes_param else meses_disponibles[0]
+    # MESES DISPONIBLES para ese año
+    meses = db.session.query(Presupuesto.mes.distinct()) \
+        .filter(Presupuesto.usuario_id == current_user.id, Presupuesto.año == año) \
+        .order_by(Presupuesto.mes).all()
+    meses = [m[0] for m in meses]
 
-    # Obtener presupuestos activos para ese año y mes
-    presupuestos = db.session.query(
-        Presupuesto.categoria_id,
-        Presupuesto.monto_presupuestado,
-        Categoria.nombre,
-        Categoria.tipo,
-        Categoria.parent_id
-    ).join(Categoria).filter(
-        Presupuesto.año == año,
-        Presupuesto.mes == mes
-    ).all()
+    print("📆 Meses disponibles:", meses)
 
-    # Agrupar por categoría padre
-    data_por_padre = {}
-    for cat_id, monto_ppto, nombre, tipo, parent_id in presupuestos:
-        if parent_id is None:
-            continue
-        padre = Categoria.query.get(parent_id)
-        if padre.nombre not in data_por_padre:
-            data_por_padre[padre.nombre] = {
-                "nombre": padre.nombre,
-                "id": padre.id,
-                "subcategorias": []
-            }
+    if not meses:
+        return render_template("real.html", data=[], año=año, mes=None, años=años, meses=[], mensaje="No hay meses con presupuesto para este año.")
 
-        real_monto = db.session.query(func.sum(Transaccion.monto)).filter_by(
-            categoria_id=cat_id,
-            tipo=tipo,
-            user_id=current_user.id
-        ).filter(
-            func.strftime("%Y", Transaccion.fecha) == str(año),
-            func.strftime("%m", Transaccion.fecha) == f"{mes:02d}"
-        ).scalar() or 0
+    mes = int(mes_param) if mes_param and int(mes_param) in meses else meses[0]
 
-        data_por_padre[padre.nombre]["subcategorias"].append({
-            "id": cat_id,
-            "nombre": nombre,
-            "presupuesto": monto_ppto,
-            "real": real_monto
-        })
+    # Obtener todas las categorías del usuario
+    categorias = Categoria.query.filter_by(usuario_id=current_user.id).all()
+    presupuestos = Presupuesto.query.filter_by(usuario_id=current_user.id, año=año, mes=mes).all()
+
+    data = {}
+    data_ids = {}
+    data_tipos = {}
+
+    for cat in categorias:
+        data[cat.nombre] = {
+            "presupuesto": 0,
+            "real": 0,
+        }
+        data_ids[cat.nombre] = cat.id
+        data_tipos[cat.nombre] = cat.tipo
+
+    for p in presupuestos:
+        nombre = next((c.nombre for c in categorias if c.id == p.categoria_id), None)
+        if nombre:
+            data[nombre]["presupuesto"] = p.monto_presupuestado
+
+    # 🔍 Aquí podrías integrar datos reales desde Transaccion más adelante
+    print(f"🧾 Año: {año} - Mes: {mes} - Categorías cargadas: {len(data)}")
+
+    return render_template(
+        "real.html",
+        año_actual=año,
+        año=año,
+        mes=mes,
+        años=años,
+        meses=meses,
+        data=data,
+        data_ids=data_ids,
+        data_tipos=data_tipos,
+        mensaje=None
+    )
+@real_bp.route("/real/guardar", methods=["POST"])
+@login_required
+def guardar_real():
+    # Aquí guardarás tanto presupuesto como real desde los formularios
+    # Por ahora solo imprime lo recibido para depuración
+    print("📥 POST recibido:", dict(request.form))
+    return redirect(url_for('real.vista_real'))

@@ -1,0 +1,82 @@
+body {
+    font-family: "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f6f8fa;
+}
+
+h2, h3 {
+    color: #333;
+}
+
+.boton {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.boton-azul {
+    background-color: #007bff;
+    color: white;
+}
+
+.boton-secundario {
+    background-color: #6c757d;
+    color: white;
+}
+
+.tabla-bloque {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+}
+
+.tabla-bloque th,
+.tabla-bloque td {
+    padding: 8px;
+    border: 1px solid #ccc;
+    text-align: center;
+    font-size: 14px;
+}
+
+.sticky-categoria {
+    text-align: left;
+    white-space: nowrap;
+    position: sticky;
+    left: 0;
+    background-color: #fff;
+    z-index: 1;
+}
+
+.menu-acciones {
+    width: 32px;
+    text-align: center;
+}
+
+.bloque-titulo {
+    background-color: #e9ecef;
+    padding: 12px;
+    margin: 0;
+    margin-bottom: 8px;
+    font-size: 18px;
+    border-left: 4px solid #007bff;
+}
+
+.presupuesto-scroll-x {
+    overflow-x: auto;
+    padding-bottom: 12px;
+}
+
+.seccion-presupuesto {
+    margin-bottom: 36px;
+    border: 1px solid #ddd;
+    padding: 16px;
+    background-color: #fff;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.nueva-fila input {
+    background-color: #e3f2fd;
+}

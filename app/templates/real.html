@@ -1,78 +1,108 @@
 {% extends "base.html" %}
-{% block title %}Real{% endblock %}
+
+{% block title %}Gasto Real Mensual | FinanzApp{% endblock %}
 
 {% block content %}
-<div style="margin: 32px;">
-    <h2 style="text-align: center;">Gasto Real Mensual</h2>
+<div class="contenedor">
+    <h2 class="titulo-principal">Gasto Real vs Presupuesto</h2>
 
-    <form method="get" action="{{ url_for('real.vista_real') }}">
-        <label style="margin-right: 8px;">Año:</label>
-        <select name="año">
+    <!-- Filtro Año/Mes -->
+    <form method="get" action="{{ url_for('real.vista_real') }}" class="formulario-filtros">
+        <label for="año">Año:</label>
+        <select name="año" id="año">
             {% for y in años %}
                 <option value="{{ y }}" {% if y == año %}selected{% endif %}>{{ y }}</option>
             {% endfor %}
         </select>
 
-        <label style="margin-left: 16px; margin-right: 8px;">Mes:</label>
-        <select name="mes">
+        <label for="mes">Mes:</label>
+        <select name="mes" id="mes">
             {% for m in meses %}
-                {% set nombre_mes = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][m - 1] %}
+                {% set nombre_mes = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][m - 1] %}
                 <option value="{{ m }}" {% if m == mes %}selected{% endif %}>{{ nombre_mes }}</option>
             {% endfor %}
         </select>
 
-        <button type="submit">Actualizar</button>
+        <button type="submit" class="boton boton-secundario">Actualizar</button>
     </form>
 
-    <br>
+    <!-- Botón global para guardar -->
+    <div style="text-align: right; margin-bottom: 24px;">
+        <button id="guardar-todos" class="boton boton-azul">
+            💾 Guardar todos los cambios
+        </button>
+    </div>
 
-    {% if mensaje %}
-        <p style="color: gray;">{{ mensaje }}</p>
-    {% endif %}
+    <!-- Menú contextual -->
+    <div id="floatingMenu" class="floating-menu"></div>
 
-    {% for grupo in data %}
-        <div class="grupo">
-            <h3 style="background: #ffcc00; padding: 8px;">{{ grupo.nombre }}</h3>
-            <table border="1" cellpadding="6" cellspacing="0" width="100%">
-                <thead>
-                    <tr>
-                        <th>Categoría</th>
-                        <th>Presupuesto</th>
-                        <th>Real</th>
-                        <th>Diferencia</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cat in grupo.subcategorias %}
-                    {% set diff = cat.real - cat.presupuesto %}
-                    <tr>
-                        <td>{{ cat.nombre }}</td>
-                        <td>{{ "%.0f"|format(cat.presupuesto) }}</td>
-                        <td contenteditable="true" class="editable" data-id="{{ cat.id }}">{{ "%.0f"|format(cat.real) }}</td>
-                        <td style="color: {{ 'red' if diff > 0 else 'green' }};">{{ "%.0f"|format(diff) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <br>
+    <!-- Contenedor con scroll horizontal -->
+    <div class="presupuesto-scroll-x">
+        {% for tipo, nombre_bloque in [
+            ("ingreso", "Ingresos"),
+            ("gasto_fijo", "Necesidades"),
+            ("gasto_variable", "Deseos"),
+            ("ahorro", "Ahorro/Deuda")
+        ] %}
+        <div class="seccion-presupuesto">
+            <h3 class="bloque-titulo">{{ nombre_bloque }}</h3>
+
+            <form method="POST" action="{{ url_for('real.guardar_real') }}" class="form-bloque">
+                <input type="hidden" name="año" value="{{ año }}">
+                <input type="hidden" name="mes" value="{{ mes }}">
+                <input type="hidden" name="tipo_actual" value="{{ tipo }}">
+
+                <table class="tabla-bloque">
+                    <thead>
+                        <tr>
+                            <th class="menu-acciones"></th>
+                            <th class="sticky-categoria">Categoría</th>
+                            <th>Presupuesto</th>
+                            <th>Real</th>
+                            <th>Diferencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for categoria, datos in data.items() if data_tipos[categoria] == tipo %}
+                        <tr>
+                            <td class="menu-acciones">
+                                <button type="button" class="dropdown-btn"
+                                        data-categoria="{{ categoria }}"
+                                        data-categoria-id="{{ data_ids[categoria] }}"
+                                        title="Opciones" tabindex="0">⋮</button>
+                            </td>
+                            <td class="sticky-categoria">
+                                <span class="nombre-categoria" data-categoria-id="{{ data_ids[categoria] }}">{{ categoria }}</span>
+                                <input type="hidden" class="categoria-id" value="{{ data_ids[categoria] }}">
+                            </td>
+                            <td><input type="text" name="presupuesto[{{ categoria }}]" value="{{ datos.presupuesto }}"></td>
+                            <td><input type="text" name="real[{{ categoria }}]" value="{{ datos.real }}"></td>
+                            {% set diferencia = datos.real - datos.presupuesto %}
+                            <td style="color: {{ 'red' if diferencia > 0 else 'green' }}">{{ diferencia }}</td>
+                        </tr>
+                        {% endfor %}
+
+                        <!-- Fila oculta para nueva categoría -->
+                        <tr class="nueva-fila" style="display: none;">
+                            <td class="menu-acciones"></td>
+                            <td class="sticky-categoria">
+                                <input type="text" name="nueva_categoria" placeholder="Nueva categoría">
+                            </td>
+                            <td><input type="text" name="presupuesto[nueva_categoria]" value="0"></td>
+                            <td><input type="text" name="real[nueva_categoria]" value="0"></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 6px; text-align: left;">
+                    <a href="#" class="añadir-categoria">+ Añadir categoría</a>
+                </div>
+            </form>
         </div>
-    {% endfor %}
+        {% endfor %}
+    </div>
 </div>
 
-<script>
-document.querySelectorAll('.editable').forEach(cell => {
-    cell.addEventListener('blur', () => {
-        const valor = parseFloat(cell.textContent) || 0;
-        const categoriaId = cell.dataset.id;
-
-        fetch('/real/guardar_monto', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ categoria_id: categoriaId, monto: valor })
-        });
-    });
-});
-</script>
+<script src="{{ url_for('static', filename='js/presupuesto.js') }}"></script>
 {% endblock %}

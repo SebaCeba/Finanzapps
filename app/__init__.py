@@ -1,5 +1,3 @@
-# app/__init__.py
-
 from flask import Flask
 from flask_login import LoginManager
 from app.models import db, Usuario
@@ -26,14 +24,14 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-    # 👇 registra aquí tus blueprints
+    # 🔗 Registra los blueprints
     from app.auth.routes import auth_bp
     from app.dashboard.routes import dashboard_bp
     from app.presupuesto.routes import presupuesto_bp
     from app.real.routes import real_bp
+
     app.register_blueprint(presupuesto_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
-    app.register_blueprint(real_bp)
-
+    app.register_blueprint(real_bp) 
     return app

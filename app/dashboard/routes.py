@@ -17,10 +17,3 @@ def bienvenida():
 def panel():
     dias_activo = (datetime.utcnow() - current_user.fecha_creacion).days
     return render_template("index.html", nombre=current_user.nombre, dias=dias_activo, activo="resumen")
-
-# Página de Gasto Real (requiere login)
-@dashboard_bp.route("/real")
-@login_required
-def real():
-    dias_activo = (datetime.utcnow() - current_user.fecha_creacion).days
-    return render_template("real.html", nombre=current_user.nombre, dias=dias_activo, activo="real")

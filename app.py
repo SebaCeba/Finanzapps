@@ -12,7 +12,10 @@ from database import db, Usuario, Categoria, Transaccion, Presupuesto, ResumenMe
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "instance", "finanzas.db")
 
-app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
+app = Flask(__name__,
+            template_folder=os.path.join(BASE_DIR, "app", "templates"),
+            static_folder=os.path.join(BASE_DIR, "static"))
+
 app.secret_key = secrets.token_hex(16)
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -95,4 +98,6 @@ def logout():
 # 🔹 Ejecutar
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+    print("🔍 STATIC FOLDER ACTUAL:", app.static_folder)
+    print("🔍 STATIC URL PATH:", app.static_url_path)
     app.run(host="0.0.0.0", port=port)
