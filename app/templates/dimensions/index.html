@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Dimensiones (MVP)</h1>
+
+<section>
+  <h2>1) Crear dimensión</h2>
+  <form id="frm-dim">
+    <input name="code" placeholder="CODE (ACCOUNT, ENTITY, ...)" required>
+    <input name="name" placeholder="Nombre" required>
+    <button type="submit">Crear</button>
+  </form>
+  <ul id="dim-list"></ul>
+</section>
+
+<hr/>
+<section>
+  <h2>2) Miembros</h2>
+  <label>Dimensión: <select id="sel-dim"></select></label>
+  <form id="frm-mem">
+    <input name="code" placeholder="Código" required>
+    <input name="name" placeholder="Nombre" required>
+    <select name="agg_op">
+      <option value="+">+</option>
+      <option value="-">-</option>
+      <option value="~">~</option>
+    </select>
+    <input name="data_type" placeholder="Data Type (Flow/Balance)">
+    <button type="submit">Agregar</button>
+  </form>
+  <ul id="mem-list"></ul>
+</section>
+
+<hr/>
+<section>
+  <h2>3) Jerarquía primaria</h2>
+  <label>Dimensión: <select id="sel-dim-h"></select></label>
+  <label>Jerarquía: <select id="sel-hier"></select></label>
+
+  <form id="frm-edge">
+    <input name="parent_member_id" placeholder="Parent Member ID (vacío = raíz)">
+    <input name="child_member_id" placeholder="Child Member ID" required>
+    <input name="order_nbr" placeholder="Orden" value="0">
+    <select name="unary_op">
+      <option value="+">+</option>
+      <option value="-">-</option>
+      <option value="~">~</option>
+    </select>
+    <button type="submit">Vincular</button>
+  </form>
+  <pre id="tree"></pre>
+</section>
+
+<script>
+async function api(path, opts={}) { const r = await fetch(path, Object.assign({headers:{'Content-Type':'application/json'}}, opts)); if(!r.ok){const t=await r.text(); alert('Error: '+t); throw new Error(t);} return r.json(); }
+
+async function loadDims() {
+  const dims = await api('/api/dimensions');
+  const ul = document.querySelector('#dim-list'); ul.innerHTML = '';
+  const sel = document.querySelector('#sel-dim'); sel.innerHTML='';
+  const selh = document.querySelector('#sel-dim-h'); selh.innerHTML='';
+  dims.forEach(d=>{
+    const li = document.createElement('li'); li.textContent = `${d.id} · ${d.code} — ${d.name}`; ul.appendChild(li);
+    const opt = new Option(`${d.code}`, d.id); sel.add(opt.cloneNode(true)); selh.add(opt);
+  });
+  if(selh.value) loadHierarchies();
+}
+
+async function loadMembers() {
+  const dimId = document.querySelector('#sel-dim').value; if(!dimId) return;
+  const mems = await api(`/api/dimensions/${dimId}/members`);
+  const ul = document.querySelector('#mem-list'); ul.innerHTML='';
+  mems.forEach(m=>{
+    const li = document.createElement('li'); li.textContent = `${m.id} · ${m.code} — ${m.name} [${m.agg_op}]`;
+    ul.appendChild(li);
+  });
+}
+
+async function loadHierarchies(){
+  const dimId = document.querySelector('#sel-dim-h').value; if(!dimId) return;
+  const hs = await api(`/api/dimensions/${dimId}/hierarchies`);
+  const sel = document.querySelector('#sel-hier'); sel.innerHTML='';
+  hs.forEach(h=> sel.add(new Option(`${h.code}`, h.id)));
+  loadTree();
+}
+
+async function loadTree(){
+  const hId = document.querySelector('#sel-hier').value; if(!hId) return;
+  const edges = await api(`/api/hierarchies/${hId}/tree`);
+  document.querySelector('#tree').textContent = JSON.stringify(edges, null, 2);
+}
+
+document.querySelector('#frm-dim').addEventListener('submit', async (e)=>{
+  e.preventDefault(); const f = e.target; const data = {code:f.code.value, name:f.name.value};
+  await api('/api/dimensions', {method:'POST', body: JSON.stringify(data)}); f.reset(); await loadDims();
+});
+
+document.querySelector('#sel-dim').addEventListener('change', loadMembers);
+
+document.querySelector('#frm-mem').addEventListener('submit', async (e)=>{
+  e.preventDefault(); const f = e.target; const dimId = document.querySelector('#sel-dim').value; if(!dimId){alert('Selecciona dimensión'); return;}
+  const data = {code:f.code.value, name:f.name.value, agg_op:f.agg_op.value, data_type:f.data_type.value};
+  await api(`/api/dimensions/${dimId}/members`, {method:'POST', body: JSON.stringify(data)}); f.reset(); await loadMembers(); await loadTree();
+});
+
+document.querySelector('#sel-dim-h').addEventListener('change', loadHierarchies);
+document.querySelector('#sel-hier').addEventListener('change', loadTree);
+
+document.querySelector('#frm-edge').addEventListener('submit', async (e)=>{
+  e.preventDefault(); const f = e.target; const hId = document.querySelector('#sel-hier').value; if(!hId){alert('Jerarquía'); return;}
+  const data = { parent_member_id: f.parent_member_id.value ? parseInt(f.parent_member_id.value) : null,
+                 child_member_id: parseInt(f.child_member_id.value),
+                 order_nbr: parseInt(f.order_nbr.value||'0'), unary_op: f.unary_op.value };
+  await api(`/api/hierarchies/${hId}/edges`, {method:'POST', body: JSON.stringify(data)}); f.reset(); await loadTree();
+});
+
+loadDims();
+</script>
+{% endblock %}
