@@ -1,9 +1,8 @@
-# app/__init__.py
-from flask import Flask, render_template
-from flask_login import LoginManager, login_required
-from app.extensions import db, migrate        # <- usa ESTE db
+from flask import Flask
+from flask_login import LoginManager
+from app.extensions import db, migrate
 from app.dimensions import init_app as init_dimensions
-from app.models import Usuario                # <- importa SOLO el modelo, no el db aquí
+from app.models import Usuario  # importa modelos para que Alembic los “vea”
 import os, secrets
 
 login_manager = LoginManager()
@@ -17,33 +16,34 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # Inicializa extensiones
     db.init_app(app)
     migrate.init_app(app, db)
-    init_dimensions(app)                      # <- registra el API /api/...
 
-    # Login
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
     @login_manager.user_loader
-    def load_user(user_id):
-        return Usuario.query.get(int(user_id))
+    def load_user(user_id: str):
+        from app.models import Usuario
+        try:
+            return db.session.get(Usuario, int(user_id))  # SQLAlchemy 2.x
+        except Exception:
+            return None
 
-    # Página de administración de dimensiones (UI)
-    @app.get("/admin/dimensions")
-    @login_required
-    def admin_dimensions():
-        return render_template("dimensions/index.html")
+    init_dimensions(app)  # API de dimensiones
 
-    # Blueprints existentes
+    # Blueprints de tu app
     from app.auth.routes import auth_bp
     from app.dashboard.routes import dashboard_bp
     from app.presupuesto.routes import presupuesto_bp
     from app.real.routes import real_bp
+    from app.admin.routes import admin_bp
+
 
     app.register_blueprint(presupuesto_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(real_bp)
+    app.register_blueprint(admin_bp)
+
     return app
