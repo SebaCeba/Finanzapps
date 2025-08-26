@@ -2,6 +2,7 @@ from flask import Flask
 from flask_login import LoginManager
 from app.extensions import db, migrate
 from app.dimensions import init_app as init_dimensions
+from app.dimensions.api_members import api_members_bp
 import os, secrets
 
 login_manager = LoginManager()
@@ -42,6 +43,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(real_bp)
+    app.register_blueprint(api_members_bp)
 
     # ✅ UI de dimensiones
     from app.admin.routes import admin_bp
