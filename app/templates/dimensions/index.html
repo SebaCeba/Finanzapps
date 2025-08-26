@@ -1,118 +1,398 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Dimensiones (MVP)</h1>
+<style>
+  /* ===== Paleta clara (fondo blanco) ===== */
+  :root{
+    --bg:#ffffff;          /* fondo app */
+    --card:#ffffff;        /* paneles */
+    --surface:#ffffff;     /* superficies de inputs */
+    --bd:#e5e7eb;          /* bordes */
+    --txt:#0f172a;         /* texto principal */
+    --muted:#64748b;       /* texto secundario */
+    --pri:#2563eb;         /* azul primario */
+    --pri2:#1d4ed8;        /* hover primario */
+    --accent:#06b6d4;      /* cian acento/foco */
+    --ok:#16a34a;          /* éxito */
+    --warn:#f59e0b;        /* aviso */
+    --err:#dc2626;         /* error */
+    --zebra:#f8fafc;       /* filas zebra */
+    --hover:#eef6ff;       /* hover tabla */
+    --chip:#f1f5f9;        /* pills */
+  }
 
-<section>
-  <h2>1) Crear dimensión</h2>
-  <form id="frm-dim">
-    <input name="code" placeholder="CODE (ACCOUNT, ENTITY, ...)" required>
-    <input name="name" placeholder="Nombre" required>
-    <button type="submit">Crear</button>
-  </form>
-  <ul id="dim-list"></ul>
-</section>
+  /* ===== Layout base ===== */
+  body{background:var(--bg); color:var(--txt)}
+  .wrap{max-width:1080px;margin:2rem auto;padding:0 1rem}
+  h1{font-size:2.2rem;margin:0 0 1rem 0;text-align:center}
+  h2{font-size:1.25rem;margin:1.2rem 0 .6rem 0}
+  .muted{color:var(--muted)}
 
-<hr/>
-<section>
-  <h2>2) Miembros</h2>
-  <label>Dimensión: <select id="sel-dim"></select></label>
-  <form id="frm-mem">
-    <input name="code" placeholder="Código" required>
-    <input name="name" placeholder="Nombre" required>
-    <select name="agg_op">
-      <option value="+">+</option>
-      <option value="-">-</option>
-      <option value="~">~</option>
-    </select>
-    <input name="data_type" placeholder="Data Type (Flow/Balance)">
-    <button type="submit">Agregar</button>
-  </form>
-  <ul id="mem-list"></ul>
-</section>
+  /* ===== Tarjetas / contenedores ===== */
+  .card{
+    background:var(--card);
+    border:1px solid var(--bd);
+    border-radius:16px;
+    padding:16px;
+    margin:14px 0;
+    box-shadow:0 6px 20px rgba(15,23,42,.06);
+  }
 
-<hr/>
-<section>
-  <h2>3) Jerarquía primaria</h2>
-  <label>Dimensión: <select id="sel-dim-h"></select></label>
-  <label>Jerarquía: <select id="sel-hier"></select></label>
+  /* ===== Grids y filas ===== */
+  .row{display:flex;gap:.6rem;flex-wrap:wrap}
+  .row>*{flex:1}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
 
-  <form id="frm-edge">
-    <input name="parent_member_id" placeholder="Parent Member ID (vacío = raíz)">
-    <input name="child_member_id" placeholder="Child Member ID" required>
-    <input name="order_nbr" placeholder="Orden" value="0">
-    <select name="unary_op">
-      <option value="+">+</option>
-      <option value="-">-</option>
-      <option value="~">~</option>
-    </select>
-    <button type="submit">Vincular</button>
-  </form>
-  <pre id="tree"></pre>
-</section>
+  /* ===== Inputs / selects / botones ===== */
+  input,select,button{
+    background:var(--surface);
+    color:var(--txt);
+    border:1px solid var(--bd);
+    border-radius:12px;
+    padding:.6rem .75rem;
+    transition:all .15s ease;
+  }
+  input::placeholder{color:#94a3b8}
+  input:focus,select:focus{
+    outline:none;
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(6,182,212,.18);
+  }
+  button{cursor:pointer}
+
+  .btn{
+    background:var(--pri);
+    border-color:var(--pri2);
+    color:#fff;
+  }
+  .btn:hover{background:var(--pri2)}
+  .btn:active{transform:translateY(1px)}
+  .btn-ghost{
+    background:transparent;
+    color:var(--pri2);
+    border-color:#cbd5e1;
+  }
+  .btn-ghost:hover{background:#eaf2ff}
+  .btn-danger{
+    background:var(--err);
+    border-color:#b91c1c;
+    color:#fff;
+  }
+  .btn-danger:hover{background:#b91c1c}
+
+  /* ===== Tabla ===== */
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:.7rem;border-bottom:1px dashed var(--bd)}
+  th{text-align:left;color:#334155;font-weight:700;letter-spacing:.3px}
+  tbody tr:nth-child(odd){background:var(--zebra)}
+  tbody tr:hover{background:var(--hover)}
+  .right{text-align:right}
+
+  .pill{
+    display:inline-block;padding:.14rem .55rem;border-radius:999px;
+    border:1px solid #e2e8f0;background:var(--chip);color:#0f172a;font-weight:600
+  }
+
+  /* ===== Árbol / jerarquía ===== */
+  ul.tree{list-style:none;padding-left:1rem}
+  ul.tree li{margin:.18rem 0}
+  .tag{font-size:.75rem;color:#475569;margin-left:.35rem}
+
+  /* Toggle +/− (claro) */
+  .toggle{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:1.35rem;height:1.1rem;margin-right:.35rem;
+    border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#0f172a;
+    font-weight:800;line-height:1;cursor:pointer;
+  }
+  .toggle[disabled]{opacity:.45;cursor:default}
+
+  /* ===== Toast ===== */
+  .toast{
+    position:fixed;top:16px;right:16px;z-index:99;min-width:280px;
+    background:#ffffff;border:1px solid #e2e8f0;color:#0f172a;
+    padding:.7rem .9rem;border-radius:12px;box-shadow:0 14px 40px rgba(15,23,42,.08)
+  }
+  .toast.ok{border-color:#16a34a}
+  .toast.err{border-color:#dc2626}
+
+  /* ===== Accesibilidad ===== */
+  a,button,input,select{outline-color:var(--accent)}
+</style>
+
+
+
+<div class="wrap">
+  <h1>Dimensiones (MVP mejorado)</h1>
+
+  <!-- 1) DIMENSIONES -->
+  <div class="card">
+    <div class="toolbar">
+      <h2>1) Dimensiones</h2>
+      <form id="frm-dim" class="row" style="max-width:520px">
+        <input name="code" placeholder="CODE (ACCOUNT, ENTITY, ...)" required>
+        <input name="name" placeholder="Nombre" required>
+        <button class="btn" type="submit">Crear</button>
+      </form>
+    </div>
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div class="muted">Tip: clic en el <b>nombre</b> para editar · botón 🗑 para eliminar.</div>
+      <div><label class="muted">Ir a miembros de: <select id="jump-dim"></select></label></div>
+    </div>
+    <table id="tbl-dim">
+      <thead><tr><th style="width:70px">ID</th><th>Código</th><th>Nombre</th><th class="right">Acciones</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- 2) MIEMBROS -->
+  <div class="card">
+    <div class="toolbar">
+      <h2>2) Miembros</h2>
+      <div class="row" style="max-width:520px">
+        <label style="flex:1">Dimensión: <select id="sel-dim"></select></label>
+        <input id="q-mem" placeholder="Buscar (código/nombre)">
+      </div>
+    </div>
+    <form id="frm-mem" class="row">
+      <input name="code" placeholder="Código" required>
+      <input name="name" placeholder="Nombre" required>
+      <select name="agg_op">
+        <option value="+">+</option><option value="-">-</option><option value="~">~</option>
+      </select>
+      <input name="data_type" placeholder="Data Type (Flow/Balance)">
+      <button class="btn" type="submit">Agregar</button>
+    </form>
+    <table id="tbl-mem" style="margin-top:.6rem">
+      <thead><tr><th style="width:70px">ID</th><th>Código</th><th>Nombre</th><th>Agg</th><th>Tipo</th><th class="right">Acciones</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- 3) JERARQUÍA PRIMARIA -->
+  <div class="card">
+    <div class="toolbar">
+      <h2>3) Jerarquía primaria</h2>
+      <div class="row" style="max-width:520px">
+        <label style="flex:1">Dimensión: <select id="sel-dim-h"></select></label>
+        <label>Jerarquía: <select id="sel-hier"></select></label>
+      </div>
+    </div>
+
+    <div class="grid">
+      <form id="frm-edge" class="row">
+        <input id="parent-lookup" list="dl-parent" placeholder="Parent (código o nombre)">
+        <datalist id="dl-parent"></datalist>
+        <input id="child-lookup" list="dl-child" placeholder="Child (código o nombre)" required>
+        <datalist id="dl-child"></datalist>
+        <input name="order_nbr" placeholder="Orden" value="0" style="max-width:120px">
+        <select name="unary_op" style="max-width:120px">
+          <option value="+">+</option><option value="-">-</option><option value="~">~</option>
+        </select>
+        <button class="btn" type="submit">Vincular</button>
+      </form>
+
+      <div>
+        <div class="toolbar">
+          <div class="muted">Árbol (solo lectura)</div>
+          <div><button id="btn-refresh" class="btn-ghost">⟳ Refrescar</button></div>
+        </div>
+        <div id="tree"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
 
 <script>
-async function api(path, opts={}) { const r = await fetch(path, Object.assign({headers:{'Content-Type':'application/json'}}, opts)); if(!r.ok){const t=await r.text(); alert('Error: '+t); throw new Error(t);} return r.json(); }
+const S = { dims:[], memsByDim:{}, hierByDim:{}, edgesByH:{} };
+const $ = (sel) => document.querySelector(sel);
+const api = async (path, opts={}) => {
+  const r = await fetch(path, Object.assign({headers:{'Content-Type':'application/json'}}, opts));
+  if(!r.ok){ let t = await r.text(); try{const j=JSON.parse(t); t=j.error||t;}catch{} toast(t,true); throw new Error(t);}
+  return r.json();
+};
+const toast = (msg, err=false)=>{ const el=$('#toast'); el.textContent=msg; el.className='toast '+(err?'err':'ok'); el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'), 2500); };
 
-async function loadDims() {
-  const dims = await api('/api/dimensions');
-  const ul = document.querySelector('#dim-list'); ul.innerHTML = '';
-  const sel = document.querySelector('#sel-dim'); sel.innerHTML='';
-  const selh = document.querySelector('#sel-dim-h'); selh.innerHTML='';
-  dims.forEach(d=>{
-    const li = document.createElement('li'); li.textContent = `${d.id} · ${d.code} — ${d.name}`; ul.appendChild(li);
-    const opt = new Option(`${d.code}`, d.id); sel.add(opt.cloneNode(true)); selh.add(opt);
-  });
-  if(selh.value) loadHierarchies();
+// ---------- Loaders ----------
+async function loadDims(){
+  S.dims = await api('/api/dimensions');
+  const tb=$('#tbl-dim tbody'); tb.innerHTML='';
+  const sel=$('#sel-dim'); const selh=$('#sel-dim-h'); const jmp=$('#jump-dim');
+  sel.innerHTML=''; selh.innerHTML=''; jmp.innerHTML='';
+  for(const d of S.dims){
+    // tabla
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${d.id}</td><td><span class="pill">${d.code}</span></td>
+      <td><span class="edit-name" data-id="${d.id}" title="Click para editar">${d.name}</span></td>
+      <td class="right">
+        <button class="btn-ghost" data-act="jump" data-id="${d.id}">➡ Ir a miembros</button>
+        <button class="btn-danger" data-act="del-dim" data-id="${d.id}">🗑</button>
+      </td>`;
+    tb.appendChild(tr);
+    // selects
+    const opt = new Option(d.code, d.id);
+    sel.add(opt.cloneNode(true)); selh.add(opt.cloneNode(true)); jmp.add(opt.cloneNode(true));
+  }
+  if(selh.value) await loadHierarchies();
+  if(sel.value) await loadMembers();
 }
 
-async function loadMembers() {
-  const dimId = document.querySelector('#sel-dim').value; if(!dimId) return;
-  const mems = await api(`/api/dimensions/${dimId}/members`);
-  const ul = document.querySelector('#mem-list'); ul.innerHTML='';
-  mems.forEach(m=>{
-    const li = document.createElement('li'); li.textContent = `${m.id} · ${m.code} — ${m.name} [${m.agg_op}]`;
-    ul.appendChild(li);
-  });
+async function loadMembers(){
+  const dimId=$('#sel-dim').value; if(!dimId) return;
+  const q = ($('#q-mem').value||'').toLowerCase();
+  S.memsByDim[dimId] = await api(`/api/dimensions/${dimId}/members`);
+  const mems = S.memsByDim[dimId].filter(m=> (m.code+" "+m.name).toLowerCase().includes(q));
+  const tb=$('#tbl-mem tbody'); tb.innerHTML='';
+  for(const m of mems){
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${m.id}</td><td><b>${m.code}</b></td>
+      <td><span class="edit-mem" data-id="${m.id}" data-field="name" title="Click para editar">${m.name}</span></td>
+      <td><span class="edit-mem" data-id="${m.id}" data-field="agg_op">${m.agg_op||''}</span></td>
+      <td><span class="edit-mem" data-id="${m.id}" data-field="data_type">${m.data_type||''}</span></td>
+      <td class="right"><button class="btn-danger" data-act="del-mem" data-id="${m.id}">🗑</button></td>`;
+    tb.appendChild(tr);
+  }
+  // datalists para jerarquía
+  buildDatalists(dimId);
 }
 
 async function loadHierarchies(){
-  const dimId = document.querySelector('#sel-dim-h').value; if(!dimId) return;
-  const hs = await api(`/api/dimensions/${dimId}/hierarchies`);
-  const sel = document.querySelector('#sel-hier'); sel.innerHTML='';
-  hs.forEach(h=> sel.add(new Option(`${h.code}`, h.id)));
-  loadTree();
+  const dimId=$('#sel-dim-h').value; if(!dimId) return;
+  S.hierByDim[dimId] = await api(`/api/dimensions/${dimId}/hierarchies`);
+  const sel=$('#sel-hier'); sel.innerHTML='';
+  for(const h of S.hierByDim[dimId]) sel.add(new Option(h.code, h.id));
+  await loadTree();
 }
 
 async function loadTree(){
-  const hId = document.querySelector('#sel-hier').value; if(!hId) return;
-  const edges = await api(`/api/hierarchies/${hId}/tree`);
-  document.querySelector('#tree').textContent = JSON.stringify(edges, null, 2);
+  const hId=$('#sel-hier').value; if(!hId) return;
+  S.edgesByH[hId] = await api(`/api/hierarchies/${hId}/tree`);
+  const dimId=$('#sel-dim-h').value;
+  const mems=(S.memsByDim[dimId]||[]); const byId={}; mems.forEach(m=>byId[m.id]=m);
+  const edges=S.edgesByH[hId];
+  const children={};
+  edges.forEach(e=>{
+    const key = (e.parent_member_id==null)? 'root' : e.parent_member_id;
+    if(!children[key]) children[key]=[];
+    children[key].push(e);
+  });
+  const container=$('#tree'); container.innerHTML='';
+  const ul=document.createElement('ul'); ul.className='tree';
+  function render(parentKey){
+    const list = children[parentKey]||[];
+    if(!list.length) return null;
+    const ul2=document.createElement('ul'); ul2.className='tree';
+    for(const e of list){
+      const li=document.createElement('li'); const mm=byId[e.child_member_id];
+      li.innerHTML = `${mm? `<b>${mm.code}</b> — ${mm.name}` : e.child_member_id}
+        <span class="tag">${e.unary_op||'+'}</span>
+        <button class="btn-ghost" data-act="del-edge" data-id="${e.id}">🗑</button>`;
+      const sub = render(e.child_member_id);
+      if(sub) li.appendChild(sub);
+      ul2.appendChild(li);
+    }
+    return ul2;
+  }
+  const top = render('root');
+  container.appendChild(top||document.createTextNode('(vacío)'));
 }
 
-document.querySelector('#frm-dim').addEventListener('submit', async (e)=>{
-  e.preventDefault(); const f = e.target; const data = {code:f.code.value, name:f.name.value};
-  await api('/api/dimensions', {method:'POST', body: JSON.stringify(data)}); f.reset(); await loadDims();
+function buildDatalists(dimId){
+  const mems=S.memsByDim[dimId]||[];
+  const dlP=$('#dl-parent'); const dlC=$('#dl-child'); dlP.innerHTML=''; dlC.innerHTML='';
+  for(const m of mems){
+    const opt1=document.createElement('option'); opt1.value=`${m.code} — ${m.name}`; opt1.dataset.id=m.id; dlP.appendChild(opt1);
+    const opt2=document.createElement('option'); opt2.value=`${m.code} — ${m.name}`; opt2.dataset.id=m.id; dlC.appendChild(opt2);
+  }
+}
+
+function lookupIdFromInput(inputId, dimId){
+  const val = $(inputId).value.toLowerCase(); if(!val) return null;
+  const mems=S.memsByDim[dimId]||[];
+  const hit=mems.find(m => (`${m.code} — ${m.name}`).toLowerCase()===val || m.code.toLowerCase()===val || m.name.toLowerCase()===val);
+  return hit? hit.id : null;
+}
+
+// ---------- Events ----------
+$('#frm-dim').addEventListener('submit', async (e)=>{
+  e.preventDefault(); const f=e.target; const data={code:f.code.value.trim(), name:f.name.value.trim()};
+  await api('/api/dimensions',{method:'POST', body:JSON.stringify(data)}); f.reset(); toast('Dimensión creada'); await loadDims();
 });
 
-document.querySelector('#sel-dim').addEventListener('change', loadMembers);
-
-document.querySelector('#frm-mem').addEventListener('submit', async (e)=>{
-  e.preventDefault(); const f = e.target; const dimId = document.querySelector('#sel-dim').value; if(!dimId){alert('Selecciona dimensión'); return;}
-  const data = {code:f.code.value, name:f.name.value, agg_op:f.agg_op.value, data_type:f.data_type.value};
-  await api(`/api/dimensions/${dimId}/members`, {method:'POST', body: JSON.stringify(data)}); f.reset(); await loadMembers(); await loadTree();
+$('#tbl-dim').addEventListener('click', async (e)=>{
+  const btn=e.target.closest('button'); if(!btn) return; const id=btn.dataset.id;
+  if(btn.dataset.act==='del-dim'){
+    if(confirm('¿Eliminar dimensión y todo su contenido?')){
+      await api(`/api/dimensions/${id}`,{method:'DELETE'}); toast('Dimensión eliminada'); await loadDims();
+    }
+  }
+  if(btn.dataset.act==='jump'){
+    $('#sel-dim').value=id; $('#sel-dim-h').value=id; await loadMembers(); await loadHierarchies();
+    window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+  }
 });
 
-document.querySelector('#sel-dim-h').addEventListener('change', loadHierarchies);
-document.querySelector('#sel-hier').addEventListener('change', loadTree);
-
-document.querySelector('#frm-edge').addEventListener('submit', async (e)=>{
-  e.preventDefault(); const f = e.target; const hId = document.querySelector('#sel-hier').value; if(!hId){alert('Jerarquía'); return;}
-  const data = { parent_member_id: f.parent_member_id.value ? parseInt(f.parent_member_id.value) : null,
-                 child_member_id: parseInt(f.child_member_id.value),
-                 order_nbr: parseInt(f.order_nbr.value||'0'), unary_op: f.unary_op.value };
-  await api(`/api/hierarchies/${hId}/edges`, {method:'POST', body: JSON.stringify(data)}); f.reset(); await loadTree();
+$('#tbl-dim').addEventListener('click', async (e)=>{
+  const span=e.target.closest('.edit-name'); if(!span) return; const id=span.dataset.id; const old=span.textContent;
+  const input=document.createElement('input'); input.value=old; input.style.width='100%'; span.replaceWith(input); input.focus();
+  input.addEventListener('blur', async ()=>{ const v=input.value.trim()||old;
+    await api(`/api/dimensions/${id}`,{method:'PUT', body:JSON.stringify({name:v})}); toast('Nombre actualizado'); await loadDims();
+  });
 });
 
+$('#sel-dim').addEventListener('change', loadMembers);
+$('#q-mem').addEventListener('input', loadMembers);
+
+$('#frm-mem').addEventListener('submit', async (e)=>{
+  e.preventDefault(); const f=e.target; const dimId=$('#sel-dim').value; if(!dimId){toast('Selecciona una dimensión',true); return;}
+  const data={code:f.code.value.trim(), name:f.name.value.trim(), agg_op:f.agg_op.value, data_type:f.data_type.value.trim()};
+  await api(`/api/dimensions/${dimId}/members`,{method:'POST', body:JSON.stringify(data)}); f.reset(); toast('Miembro creado'); await loadMembers(); await loadTree();
+});
+
+$('#tbl-mem').addEventListener('click', async (e)=>{
+  const btn=e.target.closest('button');
+  if(btn && btn.dataset.act==='del-mem'){
+    const id=btn.dataset.id;
+    if(confirm('¿Eliminar miembro?')){ await api(`/api/members/${id}`,{method:'DELETE'}); toast('Miembro eliminado'); await loadMembers(); await loadTree(); }
+    return;
+  }
+  const span=e.target.closest('.edit-mem'); if(!span) return;
+  const id=span.dataset.id, field=span.dataset.field; const old=span.textContent;
+  const input=document.createElement('input'); input.value=old; input.style.width='100%'; span.replaceWith(input); input.focus();
+  input.addEventListener('blur', async ()=>{ const v=input.value.trim()||old;
+    await api(`/api/members/${id}`,{method:'PUT', body:JSON.stringify({[field]:v})}); toast('Miembro actualizado'); await loadMembers(); await loadTree();
+  });
+});
+
+$('#sel-dim-h').addEventListener('change', async ()=>{ await loadHierarchies(); });
+$('#sel-hier').addEventListener('change', loadTree);
+$('#btn-refresh').addEventListener('click', async (e)=>{ e.preventDefault(); await loadTree(); });
+
+$('#frm-edge').addEventListener('submit', async (e)=>{
+  e.preventDefault(); const hId=$('#sel-hier').value; const dimId=$('#sel-dim-h').value; if(!hId||!dimId) return;
+  const parentId = lookupIdFromInput('#parent-lookup', dimId);
+  const childId  = lookupIdFromInput('#child-lookup', dimId);
+  if(!childId){ toast('Selecciona un hijo válido', true); return; }
+  const f=e.target; const data={ parent_member_id: parentId, child_member_id: childId, order_nbr: parseInt(f.order_nbr.value||'0'), unary_op: f.unary_op.value };
+  await api(`/api/hierarchies/${hId}/edges`,{method:'POST', body:JSON.stringify(data)}).then(()=>{ f.reset(); toast('Vínculo creado'); loadTree(); });
+});
+
+$('#tree').addEventListener('click', async (e)=>{
+  const btn=e.target.closest('button'); if(!btn) return;
+  if(btn.dataset.act==='del-edge'){
+    if(confirm('¿Eliminar vínculo?')){ await api(`/api/edges/${btn.dataset.id}`,{method:'DELETE'}); toast('Vínculo eliminado'); await loadTree(); }
+  }
+});
+
+// jump select -> cambia sección miembros/jerarquía
+$('#jump-dim').addEventListener('change', async (e)=>{
+  const id=e.target.value; $('#sel-dim').value=id; $('#sel-dim-h').value=id; await loadMembers(); await loadHierarchies();
+  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+});
+
+// init
 loadDims();
 </script>
 {% endblock %}

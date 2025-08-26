@@ -1,10 +1,18 @@
 import click
 from flask.cli import with_appcontext
-from .routes import bp as dimensions_bp
+
+# Si ya tienes un blueprint de API en routes.py, lo importamos
+try:
+    from .routes import bp as dimensions_bp
+except Exception:
+    dimensions_bp = None
 
 def init_app(app):
-    app.register_blueprint(dimensions_bp)
+    # Registrar API si existe
+    if dimensions_bp:
+        app.register_blueprint(dimensions_bp)
 
+    # Comando CLI para seed
     @app.cli.command("seed-dimensions")
     @with_appcontext
     def seed_dimensions_cmd():
