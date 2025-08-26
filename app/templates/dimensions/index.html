@@ -1,33 +1,31 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
-  /* ===== Paleta clara (fondo blanco) ===== */
+  /* ===== Tema claro (fondo blanco) ===== */
   :root{
-    --bg:#ffffff;          /* fondo app */
-    --card:#ffffff;        /* paneles */
-    --surface:#ffffff;     /* superficies de inputs */
-    --bd:#e5e7eb;          /* bordes */
-    --txt:#0f172a;         /* texto principal */
-    --muted:#64748b;       /* texto secundario */
-    --pri:#2563eb;         /* azul primario */
-    --pri2:#1d4ed8;        /* hover primario */
-    --accent:#06b6d4;      /* cian acento/foco */
-    --ok:#16a34a;          /* éxito */
-    --warn:#f59e0b;        /* aviso */
-    --err:#dc2626;         /* error */
-    --zebra:#f8fafc;       /* filas zebra */
-    --hover:#eef6ff;       /* hover tabla */
-    --chip:#f1f5f9;        /* pills */
+    --bg:#ffffff;
+    --card:#ffffff;
+    --surface:#ffffff;
+    --bd:#e5e7eb;
+    --txt:#0f172a;
+    --muted:#64748b;
+    --pri:#2563eb;
+    --pri2:#1d4ed8;
+    --accent:#06b6d4;
+    --ok:#16a34a;
+    --warn:#f59e0b;
+    --err:#dc2626;
+    --zebra:#f8fafc;
+    --hover:#eef6ff;
+    --chip:#f1f5f9;
   }
 
-  /* ===== Layout base ===== */
   body{background:var(--bg); color:var(--txt)}
   .wrap{max-width:1080px;margin:2rem auto;padding:0 1rem}
   h1{font-size:2.2rem;margin:0 0 1rem 0;text-align:center}
   h2{font-size:1.25rem;margin:1.2rem 0 .6rem 0}
   .muted{color:var(--muted)}
 
-  /* ===== Tarjetas / contenedores ===== */
   .card{
     background:var(--card);
     border:1px solid var(--bd);
@@ -37,13 +35,11 @@
     box-shadow:0 6px 20px rgba(15,23,42,.06);
   }
 
-  /* ===== Grids y filas ===== */
   .row{display:flex;gap:.6rem;flex-wrap:wrap}
   .row>*{flex:1}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media (max-width:900px){.grid{grid-template-columns:1fr}}
 
-  /* ===== Inputs / selects / botones ===== */
   input,select,button{
     background:var(--surface);
     color:var(--txt);
@@ -54,33 +50,18 @@
   }
   input::placeholder{color:#94a3b8}
   input:focus,select:focus{
-    outline:none;
-    border-color:var(--accent);
+    outline:none;border-color:var(--accent);
     box-shadow:0 0 0 3px rgba(6,182,212,.18);
   }
   button{cursor:pointer}
-
-  .btn{
-    background:var(--pri);
-    border-color:var(--pri2);
-    color:#fff;
-  }
+  .btn{background:var(--pri);border-color:var(--pri2);color:#fff}
   .btn:hover{background:var(--pri2)}
   .btn:active{transform:translateY(1px)}
-  .btn-ghost{
-    background:transparent;
-    color:var(--pri2);
-    border-color:#cbd5e1;
-  }
+  .btn-ghost{background:transparent;color:var(--pri2);border:1px solid #cbd5e1}
   .btn-ghost:hover{background:#eaf2ff}
-  .btn-danger{
-    background:var(--err);
-    border-color:#b91c1c;
-    color:#fff;
-  }
+  .btn-danger{background:var(--err);border-color:#b91c1c;color:#fff}
   .btn-danger:hover{background:#b91c1c}
 
-  /* ===== Tabla ===== */
   table{width:100%;border-collapse:separate;border-spacing:0}
   th,td{padding:.7rem;border-bottom:1px dashed var(--bd)}
   th{text-align:left;color:#334155;font-weight:700;letter-spacing:.3px}
@@ -93,12 +74,11 @@
     border:1px solid #e2e8f0;background:var(--chip);color:#0f172a;font-weight:600
   }
 
-  /* ===== Árbol / jerarquía ===== */
+  /* Árbol */
   ul.tree{list-style:none;padding-left:1rem}
   ul.tree li{margin:.18rem 0}
   .tag{font-size:.75rem;color:#475569;margin-left:.35rem}
 
-  /* Toggle +/− (claro) */
   .toggle{
     display:inline-flex;align-items:center;justify-content:center;
     width:1.35rem;height:1.1rem;margin-right:.35rem;
@@ -107,7 +87,7 @@
   }
   .toggle[disabled]{opacity:.45;cursor:default}
 
-  /* ===== Toast ===== */
+  /* Toast */
   .toast{
     position:fixed;top:16px;right:16px;z-index:99;min-width:280px;
     background:#ffffff;border:1px solid #e2e8f0;color:#0f172a;
@@ -116,19 +96,25 @@
   .toast.ok{border-color:#16a34a}
   .toast.err{border-color:#dc2626}
 
-  /* ===== Accesibilidad ===== */
   a,button,input,select{outline-color:var(--accent)}
+
+  /* === Helpers UX extra === */
+  .help-card{background:#f8fafc;border:1px solid var(--bd);padding:10px 12px;border-radius:10px;margin:.5rem 0 0;color:#334155}
+  .help-card b{color:#0f172a}
+  details.templates{background:#fafafa;border:1px dashed var(--bd);padding:.6rem .8rem;border-radius:12px;margin:.6rem 0}
+  details.templates[open]{background:#f5fbff;border-color:#bae6fd}
+  .small{font-size:.85rem;color:#64748b}
+  .tools{display:flex;gap:.4rem;align-items:center}
+  #edge-preview{font-size:.9rem;color:#334155;margin-top:.3rem}
 </style>
-
-
 
 <div class="wrap">
   <h1>Dimensiones (MVP mejorado)</h1>
-
+  <div class="help-card">Esta vista administra únicamente la <b>estructura</b> del modelo (dimensiones, miembros y jerarquías). <b>No</b> muestra ni edita datos/montos.</div>
   <!-- 1) DIMENSIONES -->
   <div class="card">
-    <div class="toolbar">
-      <h2>1) Dimensiones</h2>
+    <div class="toolbar row" style="justify-content:space-between;align-items:center">
+      <h2 style="flex:0 0 auto">1) Dimensiones</h2>
       <form id="frm-dim" class="row" style="max-width:520px">
         <input name="code" placeholder="CODE (ACCOUNT, ENTITY, ...)" required>
         <input name="name" placeholder="Nombre" required>
@@ -145,59 +131,95 @@
     </table>
   </div>
 
-  <!-- 2) MIEMBROS -->
+  <!-- 2) MIEMBROS (mejorado) -->
   <div class="card">
     <div class="toolbar">
       <h2>2) Miembros</h2>
-      <div class="row" style="max-width:520px">
+      <div class="row" style="max-width:620px">
         <label style="flex:1">Dimensión: <select id="sel-dim"></select></label>
         <input id="q-mem" placeholder="Buscar (código/nombre)">
       </div>
     </div>
+
+    <!-- Ayuda contextual -->
+    <div id="ctx-hint" class="help-card"></div>
+
+    <!-- Plantillas -->
+    <details class="templates">
+      <summary><b>Plantillas y carga rápida</b> <span class="small">(opcional)</span></summary>
+      <div id="template-box" style="margin-top:.6rem"></div>
+    </details>
+
+    <!-- Alta individual -->
     <form id="frm-mem" class="row">
-      <input name="code" placeholder="Código" required>
-      <input name="name" placeholder="Nombre" required>
-      <select name="agg_op">
+      <input name="code" placeholder="Código (p. ej. 500100 / SCL / 2025M08)" required>
+      <input name="name" placeholder="Nombre (p. ej. Ventas Netas / Santiago / Agosto 2025)" required>
+      <select name="agg_op" title="Agregación: + suma, - resta, ~ ignora">
         <option value="+">+</option><option value="-">-</option><option value="~">~</option>
       </select>
-      <input name="data_type" placeholder="Data Type (Flow/Balance)">
       <button class="btn" type="submit">Agregar</button>
     </form>
+
     <table id="tbl-mem" style="margin-top:.6rem">
-      <thead><tr><th style="width:70px">ID</th><th>Código</th><th>Nombre</th><th>Agg</th><th>Tipo</th><th class="right">Acciones</th></tr></thead>
+      <thead>
+        <tr>
+          <th style="width:70px">ID</th>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Agg</th>
+          <th class="right">Acciones</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
 
   <!-- 3) JERARQUÍA PRIMARIA -->
   <div class="card">
-    <div class="toolbar">
+    <div class="toolbar" style="display:flex;justify-content:space-between;align-items:center">
       <h2>3) Jerarquía primaria</h2>
-      <div class="row" style="max-width:520px">
-        <label style="flex:1">Dimensión: <select id="sel-dim-h"></select></label>
-        <label>Jerarquía: <select id="sel-hier"></select></label>
+      <div class="tools">
+        <button class="btn-ghost" id="btn-expand-all">Expandir todo</button>
+        <button class="btn-ghost" id="btn-collapse-all">Colapsar todo</button>
+        <button id="btn-refresh" class="btn-ghost">⟳ Refrescar</button>
       </div>
     </div>
 
+    <div class="row" style="max-width:620px;margin-bottom:.6rem">
+      <label style="flex:1">Dimensión: <select id="sel-dim-h"></select></label>
+      <label>Jerarquía: <select id="sel-hier"></select></label>
+    </div>
+
     <div class="grid">
+      <!-- Asistente de vínculo -->
       <form id="frm-edge" class="row">
-        <input id="parent-lookup" list="dl-parent" placeholder="Parent (código o nombre)">
-        <datalist id="dl-parent"></datalist>
+        <div class="small" style="flex-basis:100%">Paso 1 — elige <b>Child</b> (obligatorio):</div>
         <input id="child-lookup" list="dl-child" placeholder="Child (código o nombre)" required>
         <datalist id="dl-child"></datalist>
-        <input name="order_nbr" placeholder="Orden" value="0" style="max-width:120px">
-        <select name="unary_op" style="max-width:120px">
-          <option value="+">+</option><option value="-">-</option><option value="~">~</option>
-        </select>
-        <button class="btn" type="submit">Vincular</button>
+
+        <div class="small" style="flex-basis:100%;margin-top:.4rem">Paso 2 — ubicación del child:</div>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;flex-basis:100%">
+          <label><input type="radio" name="place" id="edge-place-root" value="root" checked> Hacer <b>raíz</b></label>
+          <label><input type="radio" name="place" id="edge-place-under" value="under"> Colgar de:</label>
+          <input id="parent-lookup" list="dl-parent" placeholder="Parent (código o nombre)" disabled>
+          <datalist id="dl-parent"></datalist>
+        </div>
+
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;flex-basis:100%;margin-top:.4rem">
+          <input name="order_nbr" placeholder="Orden (0, 10, 20…)" value="0" style="max-width:160px">
+          <select name="unary_op" title="Signo en consolidación" style="max-width:120px">
+            <option value="+">+</option><option value="-">-</option><option value="~">~</option>
+          </select>
+          <button class="btn" type="submit">Vincular</button>
+        </div>
+
+        <div id="edge-preview" class="small"></div>
       </form>
 
+      <!-- Árbol -->
       <div>
-        <div class="toolbar">
-          <div class="muted">Árbol (solo lectura)</div>
-          <div><button id="btn-refresh" class="btn-ghost">⟳ Refrescar</button></div>
-        </div>
-        <div id="tree"></div>
+        <div class="muted">Árbol (solo lectura)</div>
+        <div id="tree" style="margin-top:.4rem"></div>
       </div>
     </div>
   </div>
@@ -206,7 +228,8 @@
 <div id="toast" class="toast hidden"></div>
 
 <script>
-const S = { dims:[], memsByDim:{}, hierByDim:{}, edgesByH:{} };
+/* ===== Utiles básicos ===== */
+const S = { dims:[], memsByDim:{}, hierByDim:{}, edgesByH:{}, collapse:new Set() };
 const $ = (sel) => document.querySelector(sel);
 const api = async (path, opts={}) => {
   const r = await fetch(path, Object.assign({headers:{'Content-Type':'application/json'}}, opts));
@@ -215,7 +238,7 @@ const api = async (path, opts={}) => {
 };
 const toast = (msg, err=false)=>{ const el=$('#toast'); el.textContent=msg; el.className='toast '+(err?'err':'ok'); el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'), 2500); };
 
-// ---------- Loaders ----------
+/* ===== Carga de Dimensiones ===== */
 async function loadDims(){
   S.dims = await api('/api/dimensions');
   const tb=$('#tbl-dim tbody'); tb.innerHTML='';
@@ -237,27 +260,41 @@ async function loadDims(){
   }
   if(selh.value) await loadHierarchies();
   if(sel.value) await loadMembers();
+  renderDimHint(); renderTemplates();
 }
 
+/* ===== Carga de Miembros ===== */
 async function loadMembers(){
   const dimId=$('#sel-dim').value; if(!dimId) return;
   const q = ($('#q-mem').value||'').toLowerCase();
   S.memsByDim[dimId] = await api(`/api/dimensions/${dimId}/members`);
   const mems = S.memsByDim[dimId].filter(m=> (m.code+" "+m.name).toLowerCase().includes(q));
+
+  // 🔎 NUEVO: pedir usage en bloque
+  const ids = mems.map(m=>m.id).join(',');
+  const usage = ids ? await api(`/api/members/usage?ids=${ids}`) : {};
+
   const tb=$('#tbl-mem tbody'); tb.innerHTML='';
   for(const m of mems){
+    const used = (usage[String(m.id)]||0) > 0;
+    const disabled = used ? 'disabled title="Tiene vínculos en la jerarquía"' : '';
+    const dangerCls = used ? 'btn-disabled' : 'btn-danger';
+
     const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${m.id}</td><td><b>${m.code}</b></td>
+    tr.innerHTML = `
+      <td>${m.id}</td>
+      <td><b>${m.code}</b></td>
       <td><span class="edit-mem" data-id="${m.id}" data-field="name" title="Click para editar">${m.name}</span></td>
       <td><span class="edit-mem" data-id="${m.id}" data-field="agg_op">${m.agg_op||''}</span></td>
-      <td><span class="edit-mem" data-id="${m.id}" data-field="data_type">${m.data_type||''}</span></td>
-      <td class="right"><button class="btn-danger" data-act="del-mem" data-id="${m.id}">🗑</button></td>`;
+      <td class="right">
+        <button class="${dangerCls}" data-act="del-mem" data-id="${m.id}" ${disabled}>🗑</button>
+      </td>`;
     tb.appendChild(tr);
   }
-  // datalists para jerarquía
   buildDatalists(dimId);
 }
 
+/* ===== Jerarquías y Árbol ===== */
 async function loadHierarchies(){
   const dimId=$('#sel-dim-h').value; if(!dimId) return;
   S.hierByDim[dimId] = await api(`/api/dimensions/${dimId}/hierarchies`);
@@ -270,44 +307,65 @@ async function loadTree(){
   const hId=$('#sel-hier').value; if(!hId) return;
   S.edgesByH[hId] = await api(`/api/hierarchies/${hId}/tree`);
   const dimId=$('#sel-dim-h').value;
+
   const mems=(S.memsByDim[dimId]||[]); const byId={}; mems.forEach(m=>byId[m.id]=m);
-  const edges=S.edgesByH[hId];
+  const edges=S.edgesByH[hId] || [];
   const children={};
-  edges.forEach(e=>{
+  for(const e of edges){
     const key = (e.parent_member_id==null)? 'root' : e.parent_member_id;
     if(!children[key]) children[key]=[];
     children[key].push(e);
-  });
+  }
+  Object.values(children).forEach(list => list.sort((a,b)=> (a.order_nbr||0)-(b.order_nbr||0)));
+
   const container=$('#tree'); container.innerHTML='';
-  const ul=document.createElement('ul'); ul.className='tree';
+
   function render(parentKey){
     const list = children[parentKey]||[];
     if(!list.length) return null;
-    const ul2=document.createElement('ul'); ul2.className='tree';
+
+    const ul=document.createElement('ul'); ul.className='tree';
+
     for(const e of list){
-      const li=document.createElement('li'); const mm=byId[e.child_member_id];
-      li.innerHTML = `${mm? `<b>${mm.code}</b> — ${mm.name}` : e.child_member_id}
+      const li=document.createElement('li');
+      const mm=byId[e.child_member_id];
+      const hasKids = !!(children[e.child_member_id]?.length);
+      const isCollapsed = S.collapse.has(e.child_member_id);
+
+      const toggleBtn = hasKids
+        ? `<button class="toggle" data-id="${e.child_member_id}">${isCollapsed ? '+' : '−'}</button>`
+        : `<button class="toggle" disabled>•</button>`;
+
+      li.innerHTML = `
+        ${toggleBtn}
+        ${mm ? `<b>${mm.code}</b> — ${mm.name}` : e.child_member_id}
         <span class="tag">${e.unary_op||'+'}</span>
-        <button class="btn-ghost" data-act="del-edge" data-id="${e.id}">🗑</button>`;
-      const sub = render(e.child_member_id);
-      if(sub) li.appendChild(sub);
-      ul2.appendChild(li);
+        <button class="btn-ghost" data-act="del-edge" data-id="${e.id}">🗑</button>
+      `;
+
+      if(!isCollapsed){
+        const sub = render(e.child_member_id);
+        if(sub) li.appendChild(sub);
+      }
+      ul.appendChild(li);
     }
-    return ul2;
+    return ul;
   }
+
   const top = render('root');
-  container.appendChild(top||document.createTextNode('(vacío)'));
+  container.appendChild(top || document.createTextNode('(vacío)'));
 }
 
+/* ===== Utilidades UI ===== */
 function buildDatalists(dimId){
   const mems=S.memsByDim[dimId]||[];
   const dlP=$('#dl-parent'); const dlC=$('#dl-child'); dlP.innerHTML=''; dlC.innerHTML='';
   for(const m of mems){
-    const opt1=document.createElement('option'); opt1.value=`${m.code} — ${m.name}`; opt1.dataset.id=m.id; dlP.appendChild(opt1);
-    const opt2=document.createElement('option'); opt2.value=`${m.code} — ${m.name}`; opt2.dataset.id=m.id; dlC.appendChild(opt2);
+    const val=`${m.code} — ${m.name}`;
+    const opt1=document.createElement('option'); opt1.value=val; opt1.dataset.id=m.id; dlP.appendChild(opt1);
+    const opt2=document.createElement('option'); opt2.value=val; opt2.dataset.id=m.id; dlC.appendChild(opt2);
   }
 }
-
 function lookupIdFromInput(inputId, dimId){
   const val = $(inputId).value.toLowerCase(); if(!val) return null;
   const mems=S.memsByDim[dimId]||[];
@@ -315,7 +373,7 @@ function lookupIdFromInput(inputId, dimId){
   return hit? hit.id : null;
 }
 
-// ---------- Events ----------
+/* ===== Eventos: Dimensiones ===== */
 $('#frm-dim').addEventListener('submit', async (e)=>{
   e.preventDefault(); const f=e.target; const data={code:f.code.value.trim(), name:f.name.value.trim()};
   await api('/api/dimensions',{method:'POST', body:JSON.stringify(data)}); f.reset(); toast('Dimensión creada'); await loadDims();
@@ -342,13 +400,28 @@ $('#tbl-dim').addEventListener('click', async (e)=>{
   });
 });
 
-$('#sel-dim').addEventListener('change', loadMembers);
+/* ===== Eventos: Miembros ===== */
+$('#sel-dim').addEventListener('change', ()=>{ loadMembers(); renderDimHint(); renderTemplates(); });
 $('#q-mem').addEventListener('input', loadMembers);
 
 $('#frm-mem').addEventListener('submit', async (e)=>{
-  e.preventDefault(); const f=e.target; const dimId=$('#sel-dim').value; if(!dimId){toast('Selecciona una dimensión',true); return;}
-  const data={code:f.code.value.trim(), name:f.name.value.trim(), agg_op:f.agg_op.value, data_type:f.data_type.value.trim()};
-  await api(`/api/dimensions/${dimId}/members`,{method:'POST', body:JSON.stringify(data)}); f.reset(); toast('Miembro creado'); await loadMembers(); await loadTree();
+  e.preventDefault();
+  const f=e.target;
+  const dimId=$('#sel-dim').value;
+  if(!dimId){toast('Selecciona una dimensión',true); return;}
+  const data={
+    code: f.code.value.trim(),
+    name: f.name.value.trim(),
+    agg_op: f.agg_op.value
+  };
+  await api(`/api/dimensions/${dimId}/members`,{
+    method:'POST',
+    body:JSON.stringify(data)
+  });
+  f.reset();
+  toast('Miembro creado');
+  await loadMembers();
+  await loadTree();
 });
 
 $('#tbl-mem').addEventListener('click', async (e)=>{
@@ -366,33 +439,178 @@ $('#tbl-mem').addEventListener('click', async (e)=>{
   });
 });
 
+/* ===== Eventos: Jerarquía ===== */
 $('#sel-dim-h').addEventListener('change', async ()=>{ await loadHierarchies(); });
 $('#sel-hier').addEventListener('change', loadTree);
 $('#btn-refresh').addEventListener('click', async (e)=>{ e.preventDefault(); await loadTree(); });
 
 $('#frm-edge').addEventListener('submit', async (e)=>{
   e.preventDefault(); const hId=$('#sel-hier').value; const dimId=$('#sel-dim-h').value; if(!hId||!dimId) return;
-  const parentId = lookupIdFromInput('#parent-lookup', dimId);
+  const placeUnder = $('#edge-place-under').checked;
+  const parentId = placeUnder ? lookupIdFromInput('#parent-lookup', dimId) : null;
   const childId  = lookupIdFromInput('#child-lookup', dimId);
-  if(!childId){ toast('Selecciona un hijo válido', true); return; }
+  if(!childId){ toast('Selecciona un child válido', true); return; }
   const f=e.target; const data={ parent_member_id: parentId, child_member_id: childId, order_nbr: parseInt(f.order_nbr.value||'0'), unary_op: f.unary_op.value };
-  await api(`/api/hierarchies/${hId}/edges`,{method:'POST', body:JSON.stringify(data)}).then(()=>{ f.reset(); toast('Vínculo creado'); loadTree(); });
+  await api(`/api/hierarchies/${hId}/edges`,{method:'POST', body:JSON.stringify(data)}).then(()=>{ f.reset(); $('#edge-place-root').checked=true; $('#parent-lookup').disabled=true; toast('Vínculo creado'); loadTree(); });
 });
-
 $('#tree').addEventListener('click', async (e)=>{
+  const t = e.target.closest('.toggle');
+  if(t && t.dataset.id){
+    const id = Number(t.dataset.id);
+    if(S.collapse.has(id)) S.collapse.delete(id); else S.collapse.add(id);
+    await loadTree();
+    return;
+  }
   const btn=e.target.closest('button'); if(!btn) return;
   if(btn.dataset.act==='del-edge'){
     if(confirm('¿Eliminar vínculo?')){ await api(`/api/edges/${btn.dataset.id}`,{method:'DELETE'}); toast('Vínculo eliminado'); await loadTree(); }
   }
 });
 
-// jump select -> cambia sección miembros/jerarquía
+/* ===== UX extra: ayudas, plantillas, preview y expand/colapse ===== */
+const DIM_HINT = {
+  ACCOUNT: { ex:['500000 Ingresos','500100 Ventas Netas'], note:'Usa números + nombre. Agg por defecto: +.' },
+  ENTITY:  { ex:['SCL Santiago','BUE Buenos Aires'],        note:'Código corto (3–5). Nombre legible.' },
+  COSTCENTER:{ ex:['ADM01 Administración','VENT Ventas'],   note:'Código corto. Usa prefijos consistentes.' },
+  SCENARIO:{ ex:['ACTUAL','AOP','FCST'],                    note:'Mayúsculas. Útiles para reportes comparativos.' },
+  TIME:    { ex:['2025M08 (Agosto 2025)'],                  note:'Formato YYYYMmm. Usa la plantilla para generar 12 meses.' }
+};
+function renderDimHint(){
+  const dimId=$('#sel-dim').value; if(!dimId) return;
+  const d = S.dims.find(x=> String(x.id)===String(dimId));
+  if(!d) return;
+  const h = DIM_HINT[d.code]||{ex:[],note:''};
+  $('#ctx-hint').innerHTML =
+    `Estás trabajando en <b>${d.code}</b>. ${h.note} `+
+    (h.ex.length? `<br><span class="small">Ej.: ${h.ex.join(' · ')}</span>`:'' );
+}
+const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function templateHTML(code){
+  if(code==='TIME'){
+    const y = new Date().getFullYear();
+    return `
+      <div class="row">
+        <input id="tpl-year" type="number" value="${y}" placeholder="Año (YYYY)" style="max-width:160px">
+        <button class="btn" id="tpl-gen-time">Generar 12 meses</button>
+        <span class="small">Crea YYYYM01…YYYYM12 con nombres (Flow, +)</span>
+      </div>`;
+  }
+  if(code==='SCENARIO'){
+    return `
+      <div class="row">
+        <button class="btn" data-scn="ACTUAL">+ ACTUAL</button>
+        <button class="btn" data-scn="AOP">+ AOP</button>
+        <button class="btn" data-scn="FCST">+ FCST</button>
+        <span class="small">Alta rápida de escenarios comunes</span>
+      </div>`;
+  }
+  return `
+    <div class="row" style="flex-direction:column">
+      <textarea id="tpl-bulk" rows="4" placeholder="Código;Nombre&#10;500000;Ingresos&#10;500100;Ventas Netas" style="width:100%"></textarea>
+      <div style="display:flex;gap:.6rem;align-items:center">
+        <button class="btn" id="tpl-bulk-add">Cargar por lote</button>
+        <span class="small">Formato: <code>código;nombre</code> por línea</span>
+      </div>
+    </div>`;
+}
+function renderTemplates(){
+  const dimId=$('#sel-dim').value; if(!dimId) return;
+  const d = S.dims.find(x=> String(x.id)===String(dimId));
+  if(!d) return;
+  $('#template-box').innerHTML = templateHTML(d.code);
+
+  const btnTime = $('#tpl-gen-time');
+  if(btnTime){
+    btnTime.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const year = parseInt($('#tpl-year').value||`${new Date().getFullYear()}`,10);
+      const list=[];
+      for(let m=1;m<=12;m++){
+        const code = `${year}M${String(m).padStart(2,'0')}`;
+        const name = `${meses[m-1]} ${year}`;
+        list.push({code,name,agg_op:'+'});
+      }
+      await addMembersBulk($('#sel-dim').value, list);
+    });
+  }
+  document.querySelectorAll('[data-scn]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const code = btn.dataset.scn;
+      await addMembersBulk($('#sel-dim').value, [{code, name:code, agg_op:'+'}]);
+    });
+  });
+  const btnBulk=$('#tpl-bulk-add');
+  if(btnBulk){
+    btnBulk.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const text = ($('#tpl-bulk').value||'').trim();
+      if(!text){ toast('Pega líneas código;nombre', true); return; }
+      const lines = text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+      const list = lines.map(l=>{
+        const [c,n] = l.split(/[;\t,]+/);
+        return {code:(c||'').trim(), name:(n||'').trim(), agg_op:'+'};
+      }).filter(x=>x.code && x.name);
+      await addMembersBulk($('#sel-dim').value, list);
+    });
+  }
+}
+async function addMembersBulk(dimId, list){
+  let ok=0;
+  for(const item of list){
+    try{
+      await api(`/api/dimensions/${dimId}/members`, {method:'POST', body:JSON.stringify(item)});
+      ok++;
+    }catch(_){ /* ignora repetidos */ }
+  }
+  await loadMembers();
+  toast(`Se agregaron ${ok}/${list.length} miembros`);
+}
+
+/* Asistente de jerarquía: activar parent y vista previa */
+function updatePlacementUI(){
+  const under = $('#edge-place-under').checked;
+  $('#parent-lookup').disabled = !under;
+  previewEdge();
+}
+function nameOf(dimId, memberId){
+  const mems=S.memsByDim[dimId]||[]; const m=mems.find(x=>x.id===memberId);
+  return m? `${m.code} — ${m.name}` : '';
+}
+function previewEdge(){
+  const dimId=$('#sel-dim-h').value; if(!dimId) return;
+  const childId = lookupIdFromInput('#child-lookup', dimId);
+  const under = $('#edge-place-under').checked;
+  const parentId = under ? lookupIdFromInput('#parent-lookup', dimId) : null;
+  const unary = $('#frm-edge select[name="unary_op"]').value || '+';
+  const order = $('#frm-edge input[name="order_nbr"]').value || 0;
+  const parentTxt = parentId? nameOf(dimId, parentId) : '(raíz)';
+  const childTxt  = childId?  nameOf(dimId, childId)  : '(child?)';
+  $('#edge-preview').textContent = `${parentTxt}  ▸  ${childTxt}  [${unary}]  (orden ${order})`;
+}
+$('#edge-place-root')?.addEventListener('change', updatePlacementUI);
+$('#edge-place-under')?.addEventListener('change', updatePlacementUI);
+$('#parent-lookup')?.addEventListener('input', previewEdge);
+$('#child-lookup')?.addEventListener('input', previewEdge);
+document.querySelector('#frm-edge select[name="unary_op"]')?.addEventListener('change', previewEdge);
+document.querySelector('#frm-edge input[name="order_nbr"]')?.addEventListener('input', previewEdge);
+
+/* Expandir / Colapsar todo */
+$('#btn-expand-all')?.addEventListener('click', async (e)=>{ e.preventDefault(); S.collapse.clear(); await loadTree(); });
+$('#btn-collapse-all')?.addEventListener('click', async (e)=>{ e.preventDefault();
+  const hId=$('#sel-hier').value; const edges=S.edgesByH[hId]||[];
+  S.collapse = new Set(edges.map(e=>e.child_member_id));
+  await loadTree();
+});
+
+/* Jump select */
 $('#jump-dim').addEventListener('change', async (e)=>{
   const id=e.target.value; $('#sel-dim').value=id; $('#sel-dim-h').value=id; await loadMembers(); await loadHierarchies();
   window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
 });
 
-// init
-loadDims();
+/* Init */
+window.addEventListener('load', ()=>{ loadDims(); renderDimHint(); renderTemplates(); });
 </script>
+<!-- theme: light-ocean-v2 -->
 {% endblock %}

@@ -98,33 +98,33 @@ def create_member(dim_id):
     db.session.commit()
     return jsonify({'id': m.id}), 201
 
-@bp.put('/members/<int:mem_id>')
-def update_member(mem_id):
-    m = db.session.get(Member, mem_id)
-    if not m:
-        return jsonify({'error': 'member no existe'}), 404
-    data = request.get_json() or {}
-    for field in ('name', 'agg_op', 'data_type'):
-        if field in data:
-            setattr(m, field, (data[field] or '').strip() or None)
-    db.session.commit()
-    return jsonify({'ok': True})
+#@bp.put('/members-legacy/<int:mem_id>')
+#def update_member(mem_id):
+#    m = db.session.get(Member, mem_id)
+#    if not m:
+#        return jsonify({'error': 'member no existe'}), 404
+#    data = request.get_json() or {}
+#    for field in ('name', 'agg_op', 'data_type'):
+#        if field in data:
+#            setattr(m, field, (data[field] or '').strip() or None)
+#    db.session.commit()
+#    return jsonify({'ok': True})
 
-@bp.delete('/members/<int:mem_id>')
-def delete_member(mem_id):
-    m = db.session.get(Member, mem_id)
-    if not m:
-        return jsonify({'error': 'member no existe'}), 404
-    # eliminar edges donde participa
-    HierarchyEdge.query.filter(
-        (HierarchyEdge.child_member_id == mem_id) | (HierarchyEdge.parent_member_id == mem_id)
-    ).delete()
-    # borrar extras
-    MemberAlias.query.filter_by(member_id=mem_id).delete()
-    MemberProperty.query.filter_by(member_id=mem_id).delete()
-    db.session.delete(m)
-    db.session.commit()
-    return jsonify({'ok': True})
+#@bp.delete('/members-legacy/<int:mem_id>')
+#def delete_member(mem_id):
+#    m = db.session.get(Member, mem_id)
+#    if not m:
+#        return jsonify({'error': 'member no existe'}), 404
+#    # eliminar edges donde participa
+#    HierarchyEdge.query.filter(
+#        (HierarchyEdge.child_member_id == mem_id) | (HierarchyEdge.parent_member_id == mem_id)
+#    ).delete()
+#    # borrar extras
+#    MemberAlias.query.filter_by(member_id=mem_id).delete()
+#    MemberProperty.query.filter_by(member_id=mem_id).delete()
+#    db.session.delete(m)
+#    db.session.commit()
+#    return jsonify({'ok': True})
 
 # ---------- HIERARCHIES / EDGES ----------
 @bp.get('/dimensions/<int:dim_id>/hierarchies')
