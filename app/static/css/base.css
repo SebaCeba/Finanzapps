@@ -80,3 +80,10 @@ h2, h3 {
 .nueva-fila input {
     background-color: #e3f2fd;
 }
+.btn-disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  background: #eee;
+  color: #888;
+  border: 1px solid #ddd;
+}
