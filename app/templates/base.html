@@ -76,26 +76,18 @@
 
         /* Responsive ocultar texto en botón guardar */
         @media (max-width: 576px) {
-            .texto-guardar {
-                display: none;
-            }
+            .texto-guardar { display: none; }
         }
 
         /* Ocultar flechas en inputs numéricos */
         input[type=number]::-webkit-outer-spin-button,
         input[type=number]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+            -webkit-appearance: none; margin: 0;
         }
-
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
+        input[type=number] { -moz-appearance: textfield; }
 
         /* Celdas modificadas */
-        .modificada {
-            background-color: #fff8cc !important;
-        }
+        .modificada { background-color: #fff8cc !important; }
 
         #mensaje-cambios {
             display: none;
@@ -104,6 +96,37 @@
             margin-bottom: 12px;
             text-align: right;
         }
+
+        /* ===== Dropdown Administración (solo por click) ===== */
+        .dropdown { position: relative; display: inline-block; margin-left: 24px; }
+        .dropdown-toggle {
+            background: transparent; border: none; cursor: pointer;
+            font-weight: 500; color: #333; font-size: 16px;
+        }
+        .dropdown-toggle:focus { outline: none; }
+
+        .dropdown-menu {
+            position: absolute; left: 0; top: 100%;
+            min-width: 200px; background: #fff; border: 1px solid #eee;
+            border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            padding: 8px 0; display: none !important; z-index: 1000;
+        }
+        .dropdown-menu a {
+            display: block; padding: 10px 14px; text-decoration: none;
+            color: #333; font-weight: 500;
+        }
+        .dropdown-menu a:hover { background: #f5f7ff; }
+        .dropdown.open .dropdown-menu { display: block !important; }
+
+        /* ===== Toasts (flash messages) ===== */
+        .flash-container { position: fixed; top: 20px; right: 20px; z-index: 2000; }
+        .flash-message {
+            background-color: #e6f4ea; color: #1e4620; border: 1px solid #b7e1cd;
+            padding: 12px 16px; margin-bottom: 10px; border-radius: 10px;
+            font-size: 14px; font-weight: 500; box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            opacity: 1; transition: opacity .4s ease;
+        }
+        .flash-message.hide { opacity: 0; }
     </style>
 </head>
 
@@ -111,9 +134,17 @@
     <header>
         <div class="logo">💸 FinanzApp</div>
         <nav>
-            <a href="/invierte">Invierte</a>
-            <a href="/aprende">Aprende</a>
             <a href="/perfil">Perfil</a>
+
+            <!-- Desplegable Administración -->
+            <div class="dropdown" id="adminDropdown">
+                <button class="dropdown-toggle" id="adminToggle" aria-haspopup="true" aria-expanded="false">
+                    ⚙️ Administración ▾
+                </button>
+                <div class="dropdown-menu" aria-labelledby="adminToggle">
+                    <a href="{{ url_for('admin.admin_dimensions') }}">Dimensiones</a>
+                </div>
+            </div>
         </nav>
     </header>
 
@@ -139,19 +170,64 @@
             </a>
         </div>
 
+        <!-- Toasts: mensajes flash -->
         {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <ul class="flashes">
-                    {% for message in messages %}
-                        <li style="color: green;">{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
+          {% if messages %}
+            <div class="flash-container">
+              {% for message in messages %}
+                <div class="flash-message" role="status" aria-live="polite">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
         {% endwith %}
 
         {% block content %}{% endblock %}
     </div>
 
     {% block scripts %}{% endblock %}
+    <script>
+    /* Dropdown controlado solo por click */
+    (function () {
+      const dropdown = document.getElementById('adminDropdown');
+      if (!dropdown) return;
+
+      const toggle = document.getElementById('adminToggle');
+      const menu = dropdown.querySelector('.dropdown-menu');
+
+      if (!toggle || !menu) return;
+
+      // Abrir/cerrar con click
+      toggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', dropdown.classList.contains('open') ? 'true' : 'false');
+      });
+
+      // Cerrar si haces click fuera
+      document.addEventListener('click', function () {
+        dropdown.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      });
+
+      // Cerrar con Escape
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          dropdown.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    })();
+
+    /* Autocierra toasts a los 5 segundos */
+    (function () {
+      const flashes = document.querySelectorAll('.flash-message');
+      if (!flashes.length) return;
+
+      setTimeout(() => {
+        flashes.forEach(el => el.classList.add('hide'));
+        setTimeout(() => flashes.forEach(el => el.remove()), 400);
+      }, 5000);
+    })();
+    </script>
 </body>
 </html>
